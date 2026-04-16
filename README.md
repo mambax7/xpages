@@ -1,6 +1,10 @@
 # xpages
 xPages - Advanced Static Page Management Module for XOOPS  xPages is a professional static page management module developed for XOOPS 2.7.0 and above. It makes content management easier with its user-friendly interface and powerful features.
 
+<img width="1146" height="666" alt="4" src="https://github.com/user-attachments/assets/caaafcc6-2882-45a0-bcd5-48d31de1c2b7" />
+<img width="1431" height="998" alt="3" src="https://github.com/user-attachments/assets/98443f75-79ba-4adc-97e9-0073795ebe74" />
+<img width="1385" height="1019" alt="2" src="https://github.com/user-attachments/assets/9ae50210-9a40-4c66-a094-72689e16ee39" />
+<img width="1405" height="1087" alt="1" src="https://github.com/user-attachments/assets/1ab3e0a6-6ebc-4fcc-bdac-148919759fc1" />
 
 🚀 Features
 📄 Page Management
@@ -88,3 +92,5 @@ xPages - Advanced Static Page Management Module for XOOPS  xPages is a professio
     Search integration
 
     Block system
+
+
