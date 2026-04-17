@@ -7,13 +7,6 @@
 
 defined('XOOPS_ROOT_PATH') || die('XOOPS root path not defined');
 
-// Menü
-define('_AM_XPAGES_MENU_MAIN',     'Ana Sayfa');
-define('_AM_XPAGES_MENU_PAGES',    'Sayfalar');
-define('_AM_XPAGES_MENU_ADD_PAGE', 'Sayfa Ekle');
-define('_AM_XPAGES_MENU_FIELDS',   'İlave Alanlar');
-define('_AM_XPAGES_MENU_ABOUT',    'Hakkında');
-
 // Sayfa formu
 define('_AM_XPAGES_ADD_PAGE',      'Yeni Sayfa Ekle');
 define('_AM_XPAGES_EDIT_PAGE',     'Sayfayı Düzenle');
@@ -45,7 +38,8 @@ define('_AM_XPAGES_META_DESC_HELP',    'Arama motorlarında görünen kısa aç�
 define('_AM_XPAGES_NOINDEX',           'Bu sayfayı indexleme (noindex)');
 define('_AM_XPAGES_NOFOLLOW',          'Bu sayfadaki linkleri takip etme (nofollow)');
 define('_AM_XPAGES_REDIRECT_URL',      'Yönlendirme URL');
-define('_AM_XPAGES_REDIRECT_HELP',     'Doldurulursa sayfa bu adrese 301 yönlendirir.');
+define('_AM_XPAGES_REDIRECT_HELP',     'Doldurulursa sayfa bu adrese yönlendirilir.');
+define('_AM_XPAGES_PARENT_INVALID',    'Bir sayfa kendi alt sayfalarından biri veya kendisi üst sayfa olarak seçilemez.');
 
 // Gelişmiş
 define('_AM_XPAGES_HEADER_CODE',       'Sayfa Başı Kod (<head>)');
@@ -53,6 +47,7 @@ define('_AM_XPAGES_HEADER_CODE_HELP',  'Yalnızca bu sayfanın <head> etiketine 
 define('_AM_XPAGES_FOOTER_CODE',       'Sayfa Sonu Kod (</body>)');
 define('_AM_XPAGES_FOOTER_CODE_HELP',  'Yalnızca bu sayfanın </body> etiketine eklenecek kod (JS vb.)');
 define('_AM_XPAGES_MANAGE_FIELDS_FOR_PAGE', 'Bu Sayfaya Özel Alan Yönetimi');
+define('_AM_XPAGES_ADVANCED_CODE_RESTRICTED', 'Sayfa başı/sonu kodunu yalnızca web yöneticileri düzenleyebilir.');
 
 // İlave alan formu
 define('_AM_XPAGES_ADD_FIELD',             'Alan Ekle');
@@ -84,6 +79,7 @@ define('_AM_XPAGES_FIELD_TYPE_IMAGE',    'Resim');
 define('_AM_XPAGES_FIELD_TYPE_FILE',     'Dosya');
 define('_AM_XPAGES_FIELD_TYPE_URL',      'Bağlantı (URL)');
 define('_AM_XPAGES_FIELD_TYPE_EMAIL',    'E-posta');
+define('_AM_XPAGES_FIELD_TYPE_TEL',      'Telefon');
 define('_AM_XPAGES_FIELD_TYPE_DATE',     'Tarih');
 define('_AM_XPAGES_FIELD_TYPE_NUMBER',   'Sayı');
 define('_AM_XPAGES_FIELD_TYPE_CHECKBOX', 'Onay Kutusu');
@@ -220,3 +216,73 @@ define('_AM_XPAGES_BTN_LIST_PAGES',         '📋 Sayfaları Listele');
 define('_AM_XPAGES_TOGGLE_STATUS_TITLE',    'Durumu değiştir');
 define('_AM_XPAGES_STATUS_ACTIVE',          '✅ Aktif');
 define('_AM_XPAGES_STATUS_INACTIVE',        '❌ Pasif');
+
+// Sayfa düzenleyici ve alan formu yardımcıları
+define('_AM_XPAGES_ALIAS_PLACEHOLDER',             'Otomatik oluşturulacak');
+define('_AM_XPAGES_FIELD_OPTIONS_SAMPLE_PLACEHOLDER', 'Kırmızı&#10;Mavi&#10;Yeşil');
+define('_AM_XPAGES_FIELD_OPTIONS_SAMPLE_CODE',        'Kırmızı<br>Mavi<br>Yeşil');
+
+// Hakkında sayfası
+define('_AM_XPAGES_ABOUT_TITLE',               'Hakkında — xPages Modülü');
+define('_AM_XPAGES_ABOUT_MODULE_INFO_TITLE',   'Modül Bilgileri');
+define('_AM_XPAGES_ABOUT_FEATURES_TITLE',      'Özellikler');
+define('_AM_XPAGES_ABOUT_TEMPLATE_TITLE',      'Smarty Şablon Değişkenleri');
+define('_AM_XPAGES_ABOUT_SUPPORT_TITLE',       'Destek & İletişim');
+define('_AM_XPAGES_ABOUT_FOOTER',              'xPages — GPL 2.0 Lisansı ile dağıtılmaktadır.');
+define('_AM_XPAGES_ABOUT_LABEL_MODULE_NAME',   'Modül Adı');
+define('_AM_XPAGES_ABOUT_LABEL_VERSION',       'Sürüm');
+define('_AM_XPAGES_ABOUT_LABEL_AUTHOR',        'Yazar');
+define('_AM_XPAGES_ABOUT_LABEL_WEBSITE',       'Web Sitesi');
+define('_AM_XPAGES_ABOUT_LABEL_LICENSE',       'Lisans');
+define('_AM_XPAGES_ABOUT_LABEL_COMPATIBILITY', 'Uyumluluk');
+define('_AM_XPAGES_ABOUT_LABEL_ENCODING',      'Kodlama');
+define('_AM_XPAGES_ABOUT_FEATURE_1',           '📄 <strong>Sabit Sayfalar</strong> — SEO dostu alias URL\'ler');
+define('_AM_XPAGES_ABOUT_FEATURE_2',           '🔧 <strong>Dinamik Alan Sistemi</strong> — 14 farklı alan tipi, global veya sayfa özel');
+define('_AM_XPAGES_ABOUT_FEATURE_3',           '📁 <strong>Hiyerarşik Yapı</strong> — Parent/child sayfa ilişkisi');
+define('_AM_XPAGES_ABOUT_FEATURE_4',           '🎨 <strong>Menü Entegrasyonu</strong> — Otomatik menü ve navigasyon bloğu');
+define('_AM_XPAGES_ABOUT_FEATURE_5',           '🔍 <strong>SEO Optimizasyonu</strong> — Meta başlık/açıklama, noindex/nofollow');
+define('_AM_XPAGES_ABOUT_FEATURE_6',           '🔗 <strong>URL Yönlendirme</strong> — Sayfa bazlı URL yönlendirme');
+define('_AM_XPAGES_ABOUT_FEATURE_7',           '📊 <strong>İstatistikler</strong> — Hit sayacı ve XOOPS yorum desteği');
+define('_AM_XPAGES_ABOUT_FEATURE_8',           '🔎 <strong>Arama Entegrasyonu</strong> — XOOPS site araması');
+define('_AM_XPAGES_ABOUT_FEATURE_9',           '⚡ <strong>Sayfa Başı/Sonu Kod</strong> — Sayfa özel JS/CSS enjeksiyonu');
+define('_AM_XPAGES_ABOUT_SUPPORT_WEB',         'Web');
+define('_AM_XPAGES_ABOUT_SUPPORT_EMAIL',       'E-posta');
+define('_AM_XPAGES_ABOUT_SUPPORT_GITHUB',      'GitHub');
+define('_AM_XPAGES_ABOUT_SMARTY_EXAMPLE', <<<'EOT'
+{* Temel alanlar *}
+{$xpages_page.title}
+{$xpages_page.body nofilter}
+{$xpages_page.short_desc}
+{$xpages_page.alias}
+{$xpages_page.hits}
+{$xpages_page.create_date|date_format:"%d.%m.%Y"}
+{$xpages_page.update_date|date_format:"%d.%m.%Y %H:%M"}
+
+{* SEO *}
+{$xpages_page.meta_title}
+{$xpages_page.meta_desc}
+{$xpages_page.robots}
+
+{* İlave alana doğrudan erişim (alan adıyla) *}
+{$xpages_page.extra_fields.brosur_url.value}
+{$xpages_page.extra_fields.kapak_resim.value}
+
+{* Tüm ilave alanları döngüyle listeleme *}
+{foreach key=fid item=f from=$xpages_page.extra_fields_by_id}
+    {if $f.show_in_tpl && $f.value != ""}
+    <div class="field field-{$f.field_type}" id="field-{$fid}">
+        <strong>{$f.field_label}:</strong>
+        {if $f.field_type == "checkbox"}
+            {if $f.value}✓{else}✗{/if}
+        {elseif $f.field_type == "url"}
+            <a href="{$f.value}" target="_blank">{$f.value}</a>
+        {elseif $f.field_type == "image"}
+            <img src="{$f.value}" alt="{$f.field_label}">
+        {else}
+            {$f.value}
+        {/if}
+    </div>
+    {/if}
+{/foreach}
+EOT
+);

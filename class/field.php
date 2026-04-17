@@ -28,16 +28,16 @@ class XpagesField extends XoopsObject
      */
     public static function getTypeLabels() {
         return [
-            'text'     => '📝 Metin',
-            'textarea' => '📄 Metin Alanı',
-            'email'    => '📧 E-posta',
-            'url'      => '🔗 URL',
-            'tel'      => '📞 Telefon',
-            'number'   => '🔢 Sayı',
-            'checkbox' => '☑️ Onay Kutusu',
-            'radio'    => '🔘 Radyo Butonu',
-            'select'   => '📋 Seçim Kutusu',
-            'file'     => '📎 Dosya/Resim',
+            'text'     => defined('_AM_XPAGES_FIELD_TYPE_TEXT') ? '📝 ' . _AM_XPAGES_FIELD_TYPE_TEXT : '📝 Text',
+            'textarea' => defined('_AM_XPAGES_FIELD_TYPE_TEXTAREA') ? '📄 ' . _AM_XPAGES_FIELD_TYPE_TEXTAREA : '📄 Text Area',
+            'email'    => defined('_AM_XPAGES_FIELD_TYPE_EMAIL') ? '📧 ' . _AM_XPAGES_FIELD_TYPE_EMAIL : '📧 E-mail',
+            'url'      => defined('_AM_XPAGES_FIELD_TYPE_URL') ? '🔗 ' . _AM_XPAGES_FIELD_TYPE_URL : '🔗 URL',
+            'tel'      => defined('_AM_XPAGES_FIELD_TYPE_TEL') ? '📞 ' . _AM_XPAGES_FIELD_TYPE_TEL : '📞 Phone',
+            'number'   => defined('_AM_XPAGES_FIELD_TYPE_NUMBER') ? '🔢 ' . _AM_XPAGES_FIELD_TYPE_NUMBER : '🔢 Number',
+            'checkbox' => defined('_AM_XPAGES_FIELD_TYPE_CHECKBOX') ? '☑️ ' . _AM_XPAGES_FIELD_TYPE_CHECKBOX : '☑️ Checkbox',
+            'radio'    => defined('_AM_XPAGES_FIELD_TYPE_RADIO') ? '🔘 ' . _AM_XPAGES_FIELD_TYPE_RADIO : '🔘 Radio Button',
+            'select'   => defined('_AM_XPAGES_FIELD_TYPE_SELECT') ? '📋 ' . _AM_XPAGES_FIELD_TYPE_SELECT : '📋 Select Box',
+            'file'     => defined('_AM_XPAGES_FIELD_TYPE_FILE_IMG') ? '📎 ' . _AM_XPAGES_FIELD_TYPE_FILE_IMG : '📎 File/Image',
         ];
     }
 }
@@ -60,9 +60,12 @@ class XpagesFieldHandler extends XoopsPersistableObjectHandler
      * Sayfaya ait alanları getir (DÜZELTİLDİ - CriteriaCompo kullanıldı)
      */
     public function getFieldsForPage($pageId, $onlyActive = true) {
+        $scope = new CriteriaCompo();
+        $scope->add(new Criteria('page_id', (int)$pageId));
+        $scope->add(new Criteria('page_id', 0), 'OR'); // Global alanlar için
+
         $criteria = new CriteriaCompo();
-        $criteria->add(new Criteria('page_id', $pageId));
-        $criteria->add(new Criteria('page_id', 0), 'OR'); // Global alanlar için
+        $criteria->add($scope);
         
         if ($onlyActive) {
             $criteria->add(new Criteria('field_status', 1));
@@ -86,7 +89,6 @@ class XpagesFieldHandler extends XoopsPersistableObjectHandler
     public function fieldNameExists($fieldName, $pageId, $excludeId = 0) {
         $criteria = new CriteriaCompo();
         $criteria->add(new Criteria('field_name', $fieldName));
-        $criteria->add(new Criteria('page_id', $pageId));
         if ($excludeId > 0) {
             $criteria->add(new Criteria('field_id', $excludeId, '!='));
         }

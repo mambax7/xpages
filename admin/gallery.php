@@ -18,6 +18,12 @@ if (class_exists('Xmf\\Module\\Admin')) {
 $galleryHandler = xpages_get_handler('gallery');
 $pageHandler    = xpages_get_handler('page');
 
+if (!$galleryHandler || !$pageHandler) {
+    echo '<div style="margin:18px 0;padding:14px 16px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:6px">xPages handler unavailable.</div>';
+    xoops_cp_footer();
+    exit;
+}
+
 $pageId = isset($_GET['page_id']) ? (int)$_GET['page_id'] : (isset($_POST['page_id']) ? (int)$_POST['page_id'] : 0);
 $op     = $_GET['op'] ?? $_POST['op'] ?? 'list';
 $galleryId = isset($_GET['gallery_id']) ? (int)$_GET['gallery_id'] : (isset($_POST['gallery_id']) ? (int)$_POST['gallery_id'] : 0);
@@ -36,28 +42,40 @@ if ($pageId && $pageObj) {
 
 // ── Sil ───────────────────────────────────────────────────────────────────────
 if ($op === 'delete' && $galleryId) {
-    if (!isset($_GET['confirm'])) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['confirm'])) {
         $gobj = $galleryHandler->get($galleryId);
         if ($gobj) {
             echo '<div style="background:#fff3cd;border:1px solid #ffc107;padding:18px;margin-bottom:16px;border-radius:8px">';
             echo '<p style="margin:0 0 12px">⚠️ ' . sprintf(_AM_XPAGES_GALLERY_DELETE_CONFIRM, htmlspecialchars((string)$gobj->getVar('title'), ENT_QUOTES)) . '</p>';
-            echo '<div style="display:flex;gap:10px">';
-            echo '<a href="gallery.php?op=delete&gallery_id=' . $galleryId . '&page_id=' . $pageId . '&confirm=1" style="background:#dc3545;color:#fff;padding:7px 16px;text-decoration:none;border-radius:5px">' . _AM_XPAGES_YES . '</a>';
+            echo '<form method="post" action="gallery.php?op=delete&gallery_id=' . $galleryId . '&page_id=' . $pageId . '" style="display:flex;gap:10px;align-items:center">';
+            echo '<input type="hidden" name="op" value="delete">';
+            echo '<input type="hidden" name="gallery_id" value="' . $galleryId . '">';
+            echo '<input type="hidden" name="page_id" value="' . $pageId . '">';
+            echo '<input type="hidden" name="confirm" value="1">';
+            echo $GLOBALS['xoopsSecurity']->getTokenHTML();
+            echo '<button type="submit" style="background:#dc3545;color:#fff;padding:7px 16px;border:none;border-radius:5px;cursor:pointer">' . _AM_XPAGES_YES . '</button>';
             echo '<a href="gallery.php?page_id=' . $pageId . '" style="background:#6c757d;color:#fff;padding:7px 16px;text-decoration:none;border-radius:5px">' . _AM_XPAGES_NO . '</a>';
-            echo '</div></div>';
+            echo '</form></div>';
         }
         xoops_cp_footer();
         exit;
     }
+    if (!$GLOBALS['xoopsSecurity']->check()) {
+        redirect_header('gallery.php?page_id=' . $pageId, 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
+        exit;
+    }
     $gobj = $galleryHandler->get($galleryId);
     if ($gobj) {
-        $filePath = XOOPS_UPLOAD_PATH . '/xpages/gallery/' . $gobj->getVar('image_path');
-        if (file_exists($filePath)) {
+        $safeFile = xpages_safe_filename($gobj->getVar('image_path', 'n'));
+        $filePath = $safeFile !== '' ? XOOPS_UPLOAD_PATH . '/xpages/gallery/' . $safeFile : '';
+        if ($filePath !== '' && file_exists($filePath)) {
             @unlink($filePath);
         }
         $galleryHandler->delete($gobj);
+        redirect_header('gallery.php?page_id=' . $pageId, 2, _AM_XPAGES_GALLERY_DELETED);
+        exit;
     }
-    redirect_header('gallery.php?page_id=' . $pageId, 2, _AM_XPAGES_GALLERY_DELETED);
+    redirect_header('gallery.php?page_id=' . $pageId, 2, _AM_XPAGES_PAGE_NOT_FOUND);
     exit;
 }
 
@@ -65,6 +83,11 @@ if ($op === 'delete' && $galleryId) {
 if ($op === 'save') {
     if (!$GLOBALS['xoopsSecurity']->check()) {
         redirect_header('gallery.php?page_id=' . $pageId, 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
+        exit;
+    }
+
+    if (!is_object($GLOBALS['xoopsUser'])) {
+        redirect_header('gallery.php?page_id=' . $pageId, 3, _AM_XPAGES_SAVE_ERROR);
         exit;
     }
 
@@ -78,7 +101,7 @@ if ($op === 'save') {
     $gallery->setVar('uid',           (int)$GLOBALS['xoopsUser']->getVar('uid'));
 
     // Harici URL kontrolü
-    $imageUrl = trim($_POST['image_url'] ?? '');
+    $imageUrl = xpages_normalize_url($_POST['image_url'] ?? '');
     if (!empty($imageUrl)) {
         $gallery->setVar('image_url', $imageUrl);
         $gallery->setVar('image_path', '');
@@ -87,22 +110,21 @@ if ($op === 'save') {
     // Dosya yükleme
     if (isset($_FILES['image_file']) && $_FILES['image_file']['error'] === UPLOAD_ERR_OK) {
         $uploadDir = XOOPS_UPLOAD_PATH . '/xpages/gallery/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
+        xpages_ensure_upload_dir($uploadDir);
 
         $ext = strtolower(pathinfo($_FILES['image_file']['name'], PATHINFO_EXTENSION));
         $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
-        if (in_array($ext, $allowedExts)) {
+        if (in_array($ext, $allowedExts, true) && xpages_upload_is_allowed($_FILES['image_file']['tmp_name'], $ext)) {
             if ($galleryId && !empty($gallery->getVar('image_path'))) {
-                $oldFile = $uploadDir . $gallery->getVar('image_path');
-                if (file_exists($oldFile)) {
+                $safeOldFile = xpages_safe_filename($gallery->getVar('image_path', 'n'));
+                $oldFile = $safeOldFile !== '' ? $uploadDir . $safeOldFile : '';
+                if ($oldFile !== '' && file_exists($oldFile)) {
                     @unlink($oldFile);
                 }
             }
 
-            $newFileName = 'gallery_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+            $newFileName = 'gallery_' . time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
             if (move_uploaded_file($_FILES['image_file']['tmp_name'], $uploadDir . $newFileName)) {
                 $gallery->setVar('image_path', $newFileName);
                 $gallery->setVar('image_url', '');
@@ -158,8 +180,11 @@ if (in_array($op, ['add', 'edit'], true)) {
             <input type="file" name="image_file" accept="image/*">
             <small class="xpf-desc"><?= _AM_XPAGES_GALLERY_IMG_FILE_HELP ?></small>
             <?php if ($op === 'edit' && !empty($gallery->getVar('image_path'))): ?>
-                <br><img src="<?= XOOPS_UPLOAD_URL . '/xpages/gallery/' . $gallery->getVar('image_path') ?>" class="image-preview">
-                <br><small><?= _AM_XPAGES_GALLERY_CURRENT_IMG ?></small>
+                <?php $safeGalleryFile = xpages_safe_filename($gallery->getVar('image_path', 'n')); ?>
+                <?php if ($safeGalleryFile !== ''): ?>
+                    <br><img src="<?= XOOPS_UPLOAD_URL . '/xpages/gallery/' . rawurlencode($safeGalleryFile) ?>" class="image-preview">
+                    <br><small><?= _AM_XPAGES_GALLERY_CURRENT_IMG ?></small>
+                <?php endif; ?>
             <?php endif; ?>
         </td>
     </tr>
@@ -195,7 +220,7 @@ if (in_array($op, ['add', 'edit'], true)) {
 }
 
 // ── Galeri Listesi ────────────────────────────────────────────────────────────
-$gallery = $galleryHandler->getGalleryForPage($pageId);
+$gallery = $galleryHandler->getGalleryForPage($pageId, false);
 
 echo '<p><a href="gallery.php?op=add&page_id=' . $pageId . '" style="background:#28a745;color:#fff;padding:8px 16px;text-decoration:none;border-radius:6px">' . _AM_XPAGES_GALLERY_ADD . '</a></p>';
 

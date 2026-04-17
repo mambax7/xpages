@@ -17,6 +17,13 @@ if (class_exists('Xmf\\Module\\Admin')) {
 
 $fieldHandler = xpages_get_handler('field');
 $pageHandler  = xpages_get_handler('page');
+$valueHandler = xpages_get_handler('fieldvalue');
+
+if (!$fieldHandler || !$pageHandler || !$valueHandler) {
+    echo '<div style="margin:18px 0;padding:14px 16px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:6px">xPages handler unavailable.</div>';
+    xoops_cp_footer();
+    exit;
+}
 
 $pageId  = isset($_GET['page_id'])   ? (int)$_GET['page_id']   : (isset($_POST['page_id'])  ? (int)$_POST['page_id']  : 0);
 $op      = $_GET['op']  ?? $_POST['op']  ?? 'list';
@@ -36,30 +43,45 @@ if ($pageId && $pageObj) {
 
 // ── Sil ───────────────────────────────────────────────────────────────────────
 if ($op === 'delete' && $fieldId) {
-    if (!isset($_GET['confirm'])) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['confirm'])) {
         $fobj = $fieldHandler->get($fieldId);
         if ($fobj) {
             echo '<div style="background:#fff3cd;border:1px solid #ffc107;padding:18px;margin-bottom:16px;border-radius:8px">';
             echo '<p style="margin:0 0 12px">⚠️ ' . sprintf(_AM_XPAGES_FIELD_DELETE_CONFIRM, htmlspecialchars((string)$fobj->getVar('field_label'), ENT_QUOTES)) . '</p>';
-            echo '<div style="display:flex;gap:10px">';
-            echo '<a href="fields.php?op=delete&field_id=' . $fieldId . '&page_id=' . $pageId . '&confirm=1" style="background:#dc3545;color:#fff;padding:7px 16px;text-decoration:none;border-radius:5px">' . _AM_XPAGES_YES . '</a>';
+            echo '<form method="post" action="fields.php?op=delete&field_id=' . $fieldId . '&page_id=' . $pageId . '" style="display:flex;gap:10px;align-items:center">';
+            echo '<input type="hidden" name="op" value="delete">';
+            echo '<input type="hidden" name="field_id" value="' . $fieldId . '">';
+            echo '<input type="hidden" name="page_id" value="' . $pageId . '">';
+            echo '<input type="hidden" name="confirm" value="1">';
+            echo $GLOBALS['xoopsSecurity']->getTokenHTML();
+            echo '<button type="submit" style="background:#dc3545;color:#fff;padding:7px 16px;border:none;border-radius:5px;cursor:pointer">' . _AM_XPAGES_YES . '</button>';
             echo '<a href="fields.php?page_id=' . $pageId . '" style="background:#6c757d;color:#fff;padding:7px 16px;text-decoration:none;border-radius:5px">' . _AM_XPAGES_NO . '</a>';
-            echo '</div></div>';
+            echo '</form></div>';
         }
         xoops_cp_footer();
+        exit;
+    }
+    if (!$GLOBALS['xoopsSecurity']->check()) {
+        redirect_header('fields.php?page_id=' . $pageId, 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
         exit;
     }
     $fobj = $fieldHandler->get($fieldId);
     if ($fobj) {
         if ($fobj->getVar('field_type') === 'file' && !empty($fobj->getVar('field_default'))) {
-            $filePath = XOOPS_UPLOAD_PATH . '/xpages/' . $fobj->getVar('field_default');
-            if (file_exists($filePath)) {
+            $safeFile = xpages_safe_filename($fobj->getVar('field_default', 'n'));
+            $filePath = $safeFile !== '' ? XOOPS_UPLOAD_PATH . '/xpages/' . $safeFile : '';
+            if ($filePath !== '' && file_exists($filePath)) {
                 @unlink($filePath);
             }
         }
+        if ($valueHandler && method_exists($valueHandler, 'deleteValuesForField')) {
+            $valueHandler->deleteValuesForField($fieldId);
+        }
         $fieldHandler->delete($fobj);
+        redirect_header('fields.php?page_id=' . $pageId, 2, _AM_XPAGES_FIELD_DELETED);
+        exit;
     }
-    redirect_header('fields.php?page_id=' . $pageId, 2, _AM_XPAGES_FIELD_DELETED);
+    redirect_header('fields.php?page_id=' . $pageId, 2, _AM_XPAGES_PAGE_NOT_FOUND);
     exit;
 }
 
@@ -67,6 +89,11 @@ if ($op === 'delete' && $fieldId) {
 if ($op === 'save') {
     if (!$GLOBALS['xoopsSecurity']->check()) {
         redirect_header('fields.php?page_id=' . $pageId, 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
+        exit;
+    }
+
+    if (!is_object($GLOBALS['xoopsUser'])) {
+        redirect_header('fields.php?page_id=' . $pageId, 3, _AM_XPAGES_SAVE_ERROR);
         exit;
     }
 
@@ -122,25 +149,24 @@ $fieldOptions = implode("\n", $cleanLines);
 
         if ($field->getVar('field_type') === 'file' && isset($_FILES['field_file']) && $_FILES['field_file']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = XOOPS_UPLOAD_PATH . '/xpages/';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
+            xpages_ensure_upload_dir($uploadDir);
             
             $ext = strtolower(pathinfo($_FILES['field_file']['name'], PATHINFO_EXTENSION));
             $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'zip'];
             
-            if (!in_array($ext, $allowedExts)) {
+            if (!in_array($ext, $allowedExts, true) || !xpages_upload_is_allowed($_FILES['field_file']['tmp_name'], $ext)) {
                 echo '<div style="background:#f8d7da;color:#721c24;padding:11px;margin-bottom:14px;border-radius:5px">' . _AM_XPAGES_INVALID_FILE_TYPE . '</div>';
                 $op = $fieldId ? 'edit' : 'add';
             } else {
                 if ($fieldId && !empty($field->getVar('field_default'))) {
-                    $oldFile = $uploadDir . $field->getVar('field_default');
-                    if (file_exists($oldFile)) {
+                    $safeOldFile = xpages_safe_filename($field->getVar('field_default', 'n'));
+                    $oldFile = $safeOldFile !== '' ? $uploadDir . $safeOldFile : '';
+                    if ($oldFile !== '' && file_exists($oldFile)) {
                         @unlink($oldFile);
                     }
                 }
                 
-                $newFileName = 'field_' . ($fieldId ?: time()) . '_' . time() . '.' . $ext;
+                $newFileName = 'field_' . ($fieldId ?: time()) . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
                 if (move_uploaded_file($_FILES['field_file']['tmp_name'], $uploadDir . $newFileName)) {
                     $field->setVar('field_default', $newFileName);
                 }
@@ -207,12 +233,12 @@ if (in_array($op, ['add', 'edit'], true)) {
 <tr id="xpfOptsRow">
     <td><label><?= _AM_XPAGES_FIELD_OPTIONS ?></label><span class="xpf-desc"><?= _AM_XPAGES_FIELD_OPTIONS_HELP ?></span></td>
     <td>
-        <textarea name="field_options" id="xpfOptionsInput" rows="5" placeholder="Kırmızı&#10;Mavi&#10;Yeşil"><?= htmlspecialchars($currentOptions, ENT_QUOTES) ?></textarea>
+        <textarea name="field_options" id="xpfOptionsInput" rows="5" placeholder="<?= _AM_XPAGES_FIELD_OPTIONS_SAMPLE_PLACEHOLDER ?>"><?= htmlspecialchars($currentOptions, ENT_QUOTES) ?></textarea>
         <div class="xpf-options-help">
             <?= _AM_XPAGES_OPTIONS_HINT_TITLE ?><br>
             <?= _AM_XPAGES_OPTIONS_HINT_BODY ?><br>
             <?= _AM_XPAGES_OPTIONS_HINT_EXAMPLE ?><br>
-            <code>Kırmızı<br>Mavi<br>Yeşil</code>
+            <code><?= _AM_XPAGES_FIELD_OPTIONS_SAMPLE_CODE ?></code>
         </div>
     </td>
 </tr>
@@ -223,16 +249,17 @@ if (in_array($op, ['add', 'edit'], true)) {
         <div id="xpfFileArea" style="<?= $field->getVar('field_type', 'n') === 'file' ? '' : 'display:none' ?>">
             <input type="file" name="field_file" accept="image/*,application/pdf,.doc,.docx,.zip">
             <?php if ($op === 'edit' && $field->getVar('field_type', 'n') === 'file' && !empty($field->getVar('field_default'))): ?>
-                <?php $filePath = XOOPS_UPLOAD_PATH . '/xpages/' . $field->getVar('field_default'); ?>
-                <?php if (file_exists($filePath)): ?>
+                <?php $safeFieldFile = xpages_safe_filename($field->getVar('field_default', 'n')); ?>
+                <?php $filePath = XOOPS_UPLOAD_PATH . '/xpages/' . $safeFieldFile; ?>
+                <?php if ($safeFieldFile !== '' && file_exists($filePath)): ?>
                     <div style="margin-top:8px">
                         <strong><?= _AM_XPAGES_FILE_CURRENT ?></strong>
                         <?php 
-                        $ext = strtolower(pathinfo($field->getVar('field_default'), PATHINFO_EXTENSION));
-                        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])): ?>
-                            <img src="<?= XOOPS_UPLOAD_URL . '/xpages/' . $field->getVar('field_default') ?>" class="xpf-preview" alt="Preview">
+                        $ext = strtolower(pathinfo($safeFieldFile, PATHINFO_EXTENSION));
+                        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)): ?>
+                            <img src="<?= XOOPS_UPLOAD_URL . '/xpages/' . rawurlencode($safeFieldFile) ?>" class="xpf-preview" alt="Preview">
                         <?php else: ?>
-                            <a href="<?= XOOPS_UPLOAD_URL . '/xpages/' . $field->getVar('field_default') ?>" target="_blank"><?= htmlspecialchars($field->getVar('field_default')) ?></a>
+                            <a href="<?= XOOPS_UPLOAD_URL . '/xpages/' . rawurlencode($safeFieldFile) ?>" target="_blank"><?= htmlspecialchars($safeFieldFile) ?></a>
                         <?php endif; ?>
                         <br><small style="color:#6c757d"><?= _AM_XPAGES_FILE_REPLACE_HINT ?></small>
                     </div>
@@ -309,7 +336,7 @@ xpfToggleOpts();
 }
 
 // ── Alan Listesi ──────────────────────────────────────────────────────────────
-$fields = $pageId ? $fieldHandler->getFieldsForPage($pageId) : $fieldHandler->getGlobalFields();
+$fields = $pageId ? $fieldHandler->getFieldsForPage($pageId, false) : $fieldHandler->getGlobalFields(false);
 
 echo '<p><a href="fields.php?op=add&page_id=' . $pageId . '" style="background:#28a745;color:#fff;padding:8px 16px;text-decoration:none;border-radius:6px;font-size:13px">➕ ' . _AM_XPAGES_ADD_FIELD . '</a></p>';
 
@@ -345,12 +372,15 @@ foreach ($fields as $i => $f) {
     echo '<td style="padding:11px 14px"><code style="background:#f1f3f5;padding:2px 6px;border-radius:3px;font-size:12px">' . htmlspecialchars((string)$f->getVar('field_name', 'n'), ENT_QUOTES) . '</code>' . $scope . '</td>';
     echo '<td style="padding:11px 14px"><strong>' . htmlspecialchars((string)$f->getVar('field_label', 'n'), ENT_QUOTES) . '</strong>';
     if ($type === 'file' && !empty($f->getVar('field_default'))) {
-        $fileUrl = XOOPS_UPLOAD_URL . '/xpages/' . $f->getVar('field_default');
-        $ext = strtolower(pathinfo($f->getVar('field_default'), PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-            echo '<br><img src="' . $fileUrl . '" style="max-width:50px;max-height:50px;margin-top:5px;border-radius:4px">';
-        } else {
-            echo '<br><small><a href="' . $fileUrl . '" target="_blank" style="font-size:11px"><?= _AM_XPAGES_FILE_VIEW ?></a></small>';
+        $safeFile = xpages_safe_filename($f->getVar('field_default', 'n'));
+        if ($safeFile !== '') {
+            $fileUrl = XOOPS_UPLOAD_URL . '/xpages/' . rawurlencode($safeFile);
+            $ext = strtolower(pathinfo($safeFile, PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+                echo '<br><img src="' . $fileUrl . '" style="max-width:50px;max-height:50px;margin-top:5px;border-radius:4px">';
+            } else {
+                echo '<br><small><a href="' . $fileUrl . '" target="_blank" style="font-size:11px">' . _AM_XPAGES_FILE_VIEW . '</a></small>';
+            }
         }
     }
     echo '</td>';

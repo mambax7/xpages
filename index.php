@@ -16,9 +16,21 @@ require_once __DIR__ . '/include/functions.php';
 // Module config is in global $xoopsModuleConfig
 
 $pageHandler = xpages_get_handler('page');
+if (!$pageHandler) {
+    $xoopsTpl->assign('xpages_list', []);
+    $xoopsTpl->assign('xpages_total', 0);
+    $xoopsTpl->assign('xpages_start', 0);
+    $xoopsTpl->assign('xpages_limit', 0);
+    $xoopsTpl->assign('xpages_module_url', XOOPS_URL . '/modules/xpages/');
+    $xoopsTpl->assign('xoops_pagetitle', $xoopsModule->getVar('name'));
+    require_once XOOPS_ROOT_PATH . '/footer.php';
+    return;
+}
+
 $criteria    = new CriteriaCompo();
 $criteria->add(new Criteria('page_status', 1));
 $criteria->add(new Criteria('parent_id',   0));
+$criteria->add(new Criteria('show_in_nav',  1));
 $criteria->setSort('menu_order');
 $criteria->setOrder('ASC');
 

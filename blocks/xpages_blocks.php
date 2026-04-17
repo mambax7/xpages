@@ -18,6 +18,9 @@ function xpages_block_recent(array $options): array
     $showDesc  = isset($options[1]) ? (int)$options[1] : 1;
 
     $pageHandler = xpages_get_handler('page');
+    if (!$pageHandler) {
+        return ['pages' => [], 'show_desc' => $showDesc];
+    }
 
     $criteria = new CriteriaCompo();
     $criteria->add(new Criteria('page_status', 1));
@@ -58,6 +61,9 @@ function xpages_block_recent_edit(array $options): string
 function xpages_block_menu(): array
 {
     $pageHandler = xpages_get_handler('page');
+    if (!$pageHandler) {
+        return ['pages' => []];
+    }
     $rootPages   = $pageHandler->getMenuPages(0);
 
     $block = [];

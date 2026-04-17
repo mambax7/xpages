@@ -7,13 +7,6 @@
 
 defined('XOOPS_ROOT_PATH') || die('XOOPS root path not defined');
 
-// Menu
-define('_AM_XPAGES_MENU_MAIN',     'Home');
-define('_AM_XPAGES_MENU_PAGES',    'Pages');
-define('_AM_XPAGES_MENU_ADD_PAGE', 'Add Page');
-define('_AM_XPAGES_MENU_FIELDS',   'Extra Fields');
-define('_AM_XPAGES_MENU_ABOUT',    'About');
-
 // Page form
 define('_AM_XPAGES_ADD_PAGE',      'Add New Page');
 define('_AM_XPAGES_EDIT_PAGE',     'Edit Page');
@@ -45,7 +38,8 @@ define('_AM_XPAGES_META_DESC_HELP',    'Short description shown in search engine
 define('_AM_XPAGES_NOINDEX',           'Do not index this page (noindex)');
 define('_AM_XPAGES_NOFOLLOW',          'Do not follow links on this page (nofollow)');
 define('_AM_XPAGES_REDIRECT_URL',      'Redirect URL');
-define('_AM_XPAGES_REDIRECT_HELP',     'If set, the page will 301 redirect to this address.');
+define('_AM_XPAGES_REDIRECT_HELP',     'If set, the page will redirect to this address.');
+define('_AM_XPAGES_PARENT_INVALID',    'A page cannot be set as the parent of itself or one of its descendants.');
 
 // Advanced
 define('_AM_XPAGES_HEADER_CODE',       'Header Code (<head>)');
@@ -53,6 +47,7 @@ define('_AM_XPAGES_HEADER_CODE_HELP',  'Code to be injected into this page\'s <h
 define('_AM_XPAGES_FOOTER_CODE',       'Footer Code (</body>)');
 define('_AM_XPAGES_FOOTER_CODE_HELP',  'Code to be injected before this page\'s </body> tag only (JS, etc.)');
 define('_AM_XPAGES_MANAGE_FIELDS_FOR_PAGE', 'Manage Fields for This Page');
+define('_AM_XPAGES_ADVANCED_CODE_RESTRICTED', 'Only website webmasters can edit header/footer code.');
 
 // Extra field form
 define('_AM_XPAGES_ADD_FIELD',             'Add Field');
@@ -84,6 +79,7 @@ define('_AM_XPAGES_FIELD_TYPE_IMAGE',    'Image');
 define('_AM_XPAGES_FIELD_TYPE_FILE',     'File');
 define('_AM_XPAGES_FIELD_TYPE_URL',      'Link (URL)');
 define('_AM_XPAGES_FIELD_TYPE_EMAIL',    'E-mail');
+define('_AM_XPAGES_FIELD_TYPE_TEL',      'Phone');
 define('_AM_XPAGES_FIELD_TYPE_DATE',     'Date');
 define('_AM_XPAGES_FIELD_TYPE_NUMBER',   'Number');
 define('_AM_XPAGES_FIELD_TYPE_CHECKBOX', 'Checkbox');
@@ -219,3 +215,73 @@ define('_AM_XPAGES_BTN_LIST_PAGES',         '📋 List Pages');
 define('_AM_XPAGES_TOGGLE_STATUS_TITLE',    'Toggle status');
 define('_AM_XPAGES_STATUS_ACTIVE',          '✅ Active');
 define('_AM_XPAGES_STATUS_INACTIVE',        '❌ Inactive');
+
+// Page editor and field form helpers
+define('_AM_XPAGES_ALIAS_PLACEHOLDER',             'Auto-generated');
+define('_AM_XPAGES_FIELD_OPTIONS_SAMPLE_PLACEHOLDER', 'Red&#10;Blue&#10;Green');
+define('_AM_XPAGES_FIELD_OPTIONS_SAMPLE_CODE',        'Red<br>Blue<br>Green');
+
+// About page
+define('_AM_XPAGES_ABOUT_TITLE',               'About — xPages Module');
+define('_AM_XPAGES_ABOUT_MODULE_INFO_TITLE',   'Module Information');
+define('_AM_XPAGES_ABOUT_FEATURES_TITLE',      'Features');
+define('_AM_XPAGES_ABOUT_TEMPLATE_TITLE',      'Smarty Template Variables');
+define('_AM_XPAGES_ABOUT_SUPPORT_TITLE',       'Support & Contact');
+define('_AM_XPAGES_ABOUT_FOOTER',              'xPages is distributed under the GPL 2.0 license.');
+define('_AM_XPAGES_ABOUT_LABEL_MODULE_NAME',   'Module Name');
+define('_AM_XPAGES_ABOUT_LABEL_VERSION',       'Version');
+define('_AM_XPAGES_ABOUT_LABEL_AUTHOR',        'Author');
+define('_AM_XPAGES_ABOUT_LABEL_WEBSITE',       'Website');
+define('_AM_XPAGES_ABOUT_LABEL_LICENSE',       'License');
+define('_AM_XPAGES_ABOUT_LABEL_COMPATIBILITY', 'Compatibility');
+define('_AM_XPAGES_ABOUT_LABEL_ENCODING',      'Encoding');
+define('_AM_XPAGES_ABOUT_FEATURE_1',           '📄 <strong>Static Pages</strong> — SEO-friendly alias URLs');
+define('_AM_XPAGES_ABOUT_FEATURE_2',           '🔧 <strong>Dynamic Field System</strong> — 14 field types, global or page-specific');
+define('_AM_XPAGES_ABOUT_FEATURE_3',           '📁 <strong>Hierarchical Structure</strong> — Parent/child page relationships');
+define('_AM_XPAGES_ABOUT_FEATURE_4',           '🎨 <strong>Menu Integration</strong> — Automatic menu and navigation block');
+define('_AM_XPAGES_ABOUT_FEATURE_5',           '🔍 <strong>SEO Optimization</strong> — Meta title/description, noindex/nofollow');
+define('_AM_XPAGES_ABOUT_FEATURE_6',           '🔗 <strong>URL Redirects</strong> — Page-level URL redirects');
+define('_AM_XPAGES_ABOUT_FEATURE_7',           '📊 <strong>Statistics</strong> — Hit counter and XOOPS comment support');
+define('_AM_XPAGES_ABOUT_FEATURE_8',           '🔎 <strong>Search Integration</strong> — XOOPS site search');
+define('_AM_XPAGES_ABOUT_FEATURE_9',           '⚡ <strong>Header/Footer Code</strong> — Page-specific JS/CSS injection');
+define('_AM_XPAGES_ABOUT_SUPPORT_WEB',         'Web');
+define('_AM_XPAGES_ABOUT_SUPPORT_EMAIL',       'Email');
+define('_AM_XPAGES_ABOUT_SUPPORT_GITHUB',      'GitHub');
+define('_AM_XPAGES_ABOUT_SMARTY_EXAMPLE', <<<'EOT'
+{* Basic fields *}
+{$xpages_page.title}
+{$xpages_page.body nofilter}
+{$xpages_page.short_desc}
+{$xpages_page.alias}
+{$xpages_page.hits}
+{$xpages_page.create_date|date_format:"%d.%m.%Y"}
+{$xpages_page.update_date|date_format:"%d.%m.%Y %H:%M"}
+
+{* SEO *}
+{$xpages_page.meta_title}
+{$xpages_page.meta_desc}
+{$xpages_page.robots}
+
+{* Direct access to a custom field *}
+{$xpages_page.extra_fields.brochure_url.value}
+{$xpages_page.extra_fields.cover_image.value}
+
+{* List all custom fields in a loop *}
+{foreach key=fid item=f from=$xpages_page.extra_fields_by_id}
+    {if $f.show_in_tpl && $f.value != ""}
+    <div class="field field-{$f.field_type}" id="field-{$fid}">
+        <strong>{$f.field_label}:</strong>
+        {if $f.field_type == "checkbox"}
+            {if $f.value}✓{else}✗{/if}
+        {elseif $f.field_type == "url"}
+            <a href="{$f.value}" target="_blank">{$f.value}</a>
+        {elseif $f.field_type == "image"}
+            <img src="{$f.value}" alt="{$f.field_label}">
+        {else}
+            {$f.value}
+        {/if}
+    </div>
+    {/if}
+{/foreach}
+EOT
+);

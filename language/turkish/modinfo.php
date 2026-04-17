@@ -37,3 +37,4 @@ define('_AM_XPAGES_MENU_PAGES',    'Sayfalar');
 define('_AM_XPAGES_MENU_ADD_PAGE', 'Sayfa Ekle');
 define('_AM_XPAGES_MENU_FIELDS',   'İlave Alanlar');
 define('_AM_XPAGES_MENU_ABOUT',    'Hakkında');
+define('_AM_XPAGES_MENU_GALLERY',   'Galeri');

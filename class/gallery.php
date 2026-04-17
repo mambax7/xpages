@@ -22,11 +22,13 @@ class XpagesGallery extends XoopsObject
     }
     
     public function getImageUrl() {
-        if (!empty($this->getVar('image_url'))) {
-            return $this->getVar('image_url');
+        $imageUrl = (string)$this->getVar('image_url', 'n');
+        if ($imageUrl !== '') {
+            return xpages_normalize_url($imageUrl);
         }
-        if (!empty($this->getVar('image_path'))) {
-            return XOOPS_UPLOAD_URL . '/xpages/gallery/' . $this->getVar('image_path');
+        $imagePath = xpages_safe_filename($this->getVar('image_path', 'n'));
+        if ($imagePath !== '') {
+            return XOOPS_UPLOAD_URL . '/xpages/gallery/' . rawurlencode($imagePath);
         }
         return '';
     }

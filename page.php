@@ -5,6 +5,8 @@
  * @author   Eren Yumak — Aymak (aymak.net)
  */
 
+use Xmf\Request;
+
 require_once '../../mainfile.php';
 
 $xoopsOption['template_main'] = 'xpages_page.tpl';
@@ -12,17 +14,21 @@ require_once XOOPS_ROOT_PATH . '/header.php';
 require_once __DIR__ . '/include/functions.php';
 
 $pageHandler = xpages_get_handler('page');
+if (!$pageHandler) {
+    redirect_header(XOOPS_URL . '/modules/xpages/', 3, _MD_XPAGES_PAGE_NOT_FOUND);
+    exit;
+}
 
 // Sayfayı bul: alias veya page_id
 $page = null;
-if (!empty($_GET['alias'])) {
+if (Request::hasVar('alias', 'GET')) {
     // Alias: yalnızca izin verilen karakterler, max 255
-    $alias = preg_replace('/[^a-zA-Z0-9\-_]/', '', substr(rawurldecode($_GET['alias']), 0, 255));
+    $alias = preg_replace('/[^a-zA-Z0-9\-_]/', '', substr(Request::getString('alias', '', 'GET'), 0, 255));
     if ($alias !== '') {
         $page = $pageHandler->getByAlias($alias);
     }
-} elseif (!empty($_GET['page_id'])) {
-    $page = $pageHandler->get((int)$_GET['page_id']);
+} elseif (Request::getInt('page_id', 0, 'GET') > 0) {
+    $page = $pageHandler->get(Request::getInt('page_id', 0, 'GET'));
 }
 
 if (!$page || (int)$page->getVar('page_status') !== 1) {
@@ -30,10 +36,10 @@ if (!$page || (int)$page->getVar('page_status') !== 1) {
     exit;
 }
 
-// 301 Yönlendirme
-$redirect = $page->getVar('redirect_url', 'n');
-if ($redirect) {
-    header('Location: ' . $redirect, true, 301);
+// Yönlendirme
+$redirect = xpages_normalize_url($page->getVar('redirect_url', 'n'));
+if ($redirect !== '') {
+    header('Location: ' . $redirect, true, 302);
     exit;
 }
 
@@ -45,8 +51,8 @@ xpages_assign_page($page, $xoopsTpl);
 
 // Meta tags
 $metaTitle = $page->getVar('meta_title', 'n') ?: $page->getVar('title', 'n');
-$metaDesc  = $page->getVar('meta_desc', 'n');
-$metaKw    = $page->getVar('meta_keywords', 'n');
+$metaDesc  = $page->getVar('meta_desc', 'n') ?: ($xoopsModuleConfig['meta_description'] ?? '');
+$metaKw    = $page->getVar('meta_keywords', 'n') ?: ($xoopsModuleConfig['meta_keywords'] ?? '');
 
 $xoopsTpl->assign('xoops_pagetitle', htmlspecialchars((string)$metaTitle, ENT_QUOTES));
 
@@ -60,9 +66,8 @@ if ($metaKw) {
 
 // Robots
 $robots = $page->getRobots();
-if ($robots !== 'index, follow') {
-    $xoopsTpl->assign('xpages_robots', $robots);
-}
+$xoopsTpl->assign('xoops_meta_robots', $robots);
+$xoopsTpl->assign('xpages_robots', $robots);
 
 // Header/Footer kod enjeksiyonu
 $headerCode = $page->getVar('header_code', 'n');

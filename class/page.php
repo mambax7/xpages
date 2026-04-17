@@ -81,6 +81,24 @@ class XpagesPageHandler extends XoopsPersistableObjectHandler
         $objects = $this->getObjects($criteria);
         return !empty($objects) ? $objects[0] : null;
     }
+
+    /**
+     * Menüde gösterilecek sayfaları getir
+     */
+    public function getMenuPages($parentId = 0, $onlyActive = true) {
+        $criteria = new CriteriaCompo();
+        $criteria->add(new Criteria('parent_id', (int)$parentId));
+        $criteria->add(new Criteria('show_in_menu', 1));
+
+        if ($onlyActive) {
+            $criteria->add(new Criteria('page_status', 1));
+        }
+
+        $criteria->setSort('menu_order');
+        $criteria->setOrder('ASC');
+
+        return $this->getObjects($criteria);
+    }
     
     /**
      * Benzersiz alias oluştur

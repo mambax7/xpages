@@ -35,3 +35,4 @@ define('_AM_XPAGES_MENU_PAGES',    'Pages');
 define('_AM_XPAGES_MENU_ADD_PAGE', 'Add Page');
 define('_AM_XPAGES_MENU_FIELDS',   'Extra Fields');
 define('_AM_XPAGES_MENU_ABOUT',    'About');
+define('_AM_XPAGES_MENU_GALLERY',  'Gallery');

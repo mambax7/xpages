@@ -19,14 +19,30 @@ $pageHandler  = xpages_get_handler('page');
 $fieldHandler = xpages_get_handler('field');
 $valueHandler = xpages_get_handler('fieldvalue');
 
+if (!$pageHandler || !$fieldHandler || !$valueHandler) {
+    echo '<div style="margin:18px 0;padding:14px 16px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:6px">xPages handler unavailable.</div>';
+    xoops_cp_footer();
+    exit;
+}
+
 $pageId = isset($_GET['page_id'])  ? (int)$_GET['page_id']  :
          (isset($_POST['page_id']) ? (int)$_POST['page_id'] : 0);
 $op     = $_POST['op'] ?? 'edit';
+$canUseAdvancedCode = is_object($xoopsUser) && method_exists($xoopsUser, 'getGroups') && in_array(1, $xoopsUser->getGroups(), true);
+$descendantIds = [];
+if ($pageId) {
+    xpages_collect_descendant_ids($pageHandler, $pageId, $descendantIds);
+}
 
 // ── Kaydet ────────────────────────────────────────────────────────────────────
 if ($op === 'save') {
     if (!$GLOBALS['xoopsSecurity']->check()) {
         redirect_header('pages.php', 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
+        exit;
+    }
+
+    if (!is_object($GLOBALS['xoopsUser'])) {
+        redirect_header('pages.php', 3, _AM_XPAGES_SAVE_ERROR);
         exit;
     }
 
@@ -36,22 +52,37 @@ if ($op === 'save') {
         exit;
     }
 
+    $parentId = (int)($_POST['parent_id'] ?? 0);
+    if ($pageId && $parentId > 0 && ($parentId === $pageId || in_array($parentId, $descendantIds, true))) {
+        redirect_header('page_edit.php?page_id=' . $pageId, 3, _AM_XPAGES_PARENT_INVALID);
+        exit;
+    }
+
     $page->setVar('title',        $_POST['title']        ?? '');
-    $page->setVar('body',         $_POST['body']         ?? '', true);
+    $page->setVar('body',         $_POST['body']         ?? '');
     $page->setVar('short_desc',   $_POST['short_desc']   ?? '');
     $page->setVar('page_status',  (int)($_POST['page_status']  ?? 1));
     $page->setVar('menu_order',   (int)($_POST['menu_order']   ?? 0));
     $page->setVar('show_in_menu', (int)($_POST['show_in_menu'] ?? 0));
     $page->setVar('show_in_nav',  (int)($_POST['show_in_nav']  ?? 0));
-    $page->setVar('parent_id',    (int)($_POST['parent_id']    ?? 0));
+    $page->setVar('parent_id',    $parentId);
     $page->setVar('meta_title',    $_POST['meta_title']    ?? '');
     $page->setVar('meta_keywords', $_POST['meta_keywords'] ?? '');
     $page->setVar('meta_desc',     $_POST['meta_desc']     ?? '');
     $page->setVar('noindex',      isset($_POST['noindex'])  ? 1 : 0);
     $page->setVar('nofollow',     isset($_POST['nofollow']) ? 1 : 0);
-    $page->setVar('redirect_url', $_POST['redirect_url'] ?? '');
-    $page->setVar('header_code',  $_POST['header_code']  ?? '');
-    $page->setVar('footer_code',  $_POST['footer_code']  ?? '');
+    $page->setVar('redirect_url', xpages_normalize_url($_POST['redirect_url'] ?? ''));
+
+    if ($canUseAdvancedCode) {
+        $page->setVar('header_code',  $_POST['header_code']  ?? '');
+        $page->setVar('footer_code',  $_POST['footer_code']  ?? '');
+    } elseif ($pageId) {
+        $page->setVar('header_code',  $page->getVar('header_code', 'n'));
+        $page->setVar('footer_code',  $page->getVar('footer_code', 'n'));
+    } else {
+        $page->setVar('header_code',  '');
+        $page->setVar('footer_code',  '');
+    }
     $page->setVar('uid',          (int)($GLOBALS['xoopsUser']->getVar('uid') ?? 0));
 
     $rawAlias = trim($_POST['alias'] ?? '');
@@ -83,9 +114,7 @@ if ($op === 'save') {
         }
         
         $uploadDir = XOOPS_UPLOAD_PATH . '/xpages/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
+        xpages_ensure_upload_dir($uploadDir);
         
         if (!empty($_FILES['extra_files'])) {
             foreach ($_FILES['extra_files']['name'] as $fid => $fileName) {
@@ -97,16 +126,9 @@ if ($op === 'save') {
                         $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
                         $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'doc', 'docx', 'zip'];
                         
-                        if (in_array($ext, $allowedExts)) {
-                            $oldValue = $values[(int)$fid] ?? '';
-                            if (!empty($oldValue)) {
-                                $oldFile = $uploadDir . $oldValue;
-                                if (file_exists($oldFile)) {
-                                    @unlink($oldFile);
-                                }
-                            }
-                            
-                            $newFileName = 'page_' . $savedId . '_field_' . $fid . '_' . time() . '.' . $ext;
+                        if (in_array($ext, $allowedExts, true) && xpages_upload_is_allowed($_FILES['extra_files']['tmp_name'][$fid], $ext)) {
+                            $randomPart = bin2hex(random_bytes(6));
+                            $newFileName = 'page_' . $savedId . '_field_' . $fid . '_' . $randomPart . '.' . $ext;
                             if (move_uploaded_file($_FILES['extra_files']['tmp_name'][$fid], $uploadDir . $newFileName)) {
                                 $values[(int)$fid] = $newFileName;
                             }
@@ -131,9 +153,10 @@ if (!$page) {
 }
 
 $existingValues = $pageId ? $valueHandler->getValuesForPage($pageId) : array();
-$extraFields    = $pageId ? $fieldHandler->getFieldsForPage($pageId) : $fieldHandler->getGlobalFields();
+$extraFields    = $pageId ? $fieldHandler->getFieldsForPage($pageId, false) : $fieldHandler->getGlobalFields(false);
 
-$allPages = $pageHandler->getObjects(new Criteria('page_status', 1)) ?: array();
+$allPages = $pageHandler->getObjects() ?: array();
+$blockedParentIds = array_flip($descendantIds);
 ?>
 
 <h3><?= $pageId ? _AM_XPAGES_EDIT_PAGE : _AM_XPAGES_ADD_PAGE ?></h3>
@@ -181,7 +204,7 @@ $allPages = $pageHandler->getObjects(new Criteria('page_status', 1)) ?: array();
     </div>
     <div class="xpages-field">
         <label><?= _AM_XPAGES_PAGE_ALIAS ?></label>
-        <input type="text" name="alias" value="<?= htmlspecialchars((string)$page->getVar('alias', 'n'), ENT_QUOTES) ?>" placeholder="otomatik-olusturulacak">
+        <input type="text" name="alias" value="<?= htmlspecialchars((string)$page->getVar('alias', 'n'), ENT_QUOTES) ?>" placeholder="<?= _AM_XPAGES_ALIAS_PLACEHOLDER ?>">
         <small class="xpf-desc"><?= _AM_XPAGES_ALIAS_HELP ?></small>
     </div>
     <div class="xpages-field">
@@ -213,16 +236,17 @@ $allPages = $pageHandler->getObjects(new Criteria('page_status', 1)) ?: array();
             <label><input type="checkbox" name="show_in_nav" value="1" <?= $page->getVar('show_in_nav') ? 'checked' : '' ?>> <?= _AM_XPAGES_SHOW_IN_NAV ?></label>
         </div>
     </div>
-    <div class="xpages-field">
-        <label><?= _AM_XPAGES_PARENT_PAGE ?></label>
-        <select name="parent_id">
-            <option value="0"><?= _AM_XPAGES_NO_PARENT ?></option>
-            <?php foreach ($allPages as $ap):
-                if ((int)$ap->getVar('page_id') === $pageId) continue; ?>
-            <option value="<?= $ap->getVar('page_id') ?>" <?= (int)$page->getVar('parent_id') === (int)$ap->getVar('page_id') ? 'selected' : '' ?>>
-                <?= htmlspecialchars((string)$ap->getVar('title'), ENT_QUOTES) ?>
-            </option>
-            <?php endforeach; ?>
+<div class="xpages-field">
+    <label><?= _AM_XPAGES_PARENT_PAGE ?></label>
+    <select name="parent_id">
+        <option value="0"><?= _AM_XPAGES_NO_PARENT ?></option>
+        <?php foreach ($allPages as $ap):
+            $apId = (int)$ap->getVar('page_id');
+            if ($apId === $pageId || isset($blockedParentIds[$apId])) continue; ?>
+        <option value="<?= $ap->getVar('page_id') ?>" <?= (int)$page->getVar('parent_id') === (int)$ap->getVar('page_id') ? 'selected' : '' ?>>
+            <?= htmlspecialchars((string)$ap->getVar('title'), ENT_QUOTES) ?>
+        </option>
+        <?php endforeach; ?>
         </select>
     </div>
 </div>
@@ -260,6 +284,7 @@ $allPages = $pageHandler->getObjects(new Criteria('page_status', 1)) ?: array();
 
 <!-- TAB: Gelişmiş -->
 <div id="tab-adv" class="xp-tab-pane">
+    <?php if ($canUseAdvancedCode): ?>
     <div class="xpages-field">
         <label><?= _AM_XPAGES_HEADER_CODE ?></label>
         <textarea name="header_code" rows="5" style="font-family:monospace"><?= htmlspecialchars((string)$page->getVar('header_code', 'n'), ENT_QUOTES) ?></textarea>
@@ -270,6 +295,14 @@ $allPages = $pageHandler->getObjects(new Criteria('page_status', 1)) ?: array();
         <textarea name="footer_code" rows="5" style="font-family:monospace"><?= htmlspecialchars((string)$page->getVar('footer_code', 'n'), ENT_QUOTES) ?></textarea>
         <small class="xpf-desc"><?= _AM_XPAGES_FOOTER_CODE_HELP ?></small>
     </div>
+    <?php else: ?>
+    <div class="xpages-field">
+        <label><?= _AM_XPAGES_HEADER_CODE ?></label>
+        <div style="padding:10px 12px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;color:#6c757d">
+            <?= _AM_XPAGES_ADVANCED_CODE_RESTRICTED ?>
+        </div>
+    </div>
+    <?php endif; ?>
     <?php if ($pageId): ?>
     <div class="xpages-field">
         <label><?= _AM_XPAGES_MANAGE_FIELDS_FOR_PAGE ?></label>
@@ -294,7 +327,6 @@ $allPages = $pageHandler->getObjects(new Criteria('page_status', 1)) ?: array();
 <div id="tab-extra" class="xp-tab-pane">
     <?php foreach ($extraFields as $field):
         $fid = (int)$field->getVar('field_id');
-        if (!(int)$field->getVar('field_status')) continue;
         $val = $existingValues[$fid] ?? (string)$field->getVar('field_default', 'n');
         echo xpages_render_field_input($field, $val);
     endforeach; ?>

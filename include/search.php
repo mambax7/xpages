@@ -15,8 +15,17 @@ function xpages_search(array $queryArray, int $andor, int $limit, int $offset, i
 
     $conditions = [];
     foreach ($queryArray as $q) {
+        $q = trim($q);
+        if ($q === '') {
+            continue;
+        }
+        $q = addcslashes($q, "\\%_");
         $q = $db->escape($q);
         $conditions[] = "(title LIKE '%{$q}%' OR body LIKE '%{$q}%' OR short_desc LIKE '%{$q}%')";
+    }
+
+    if (empty($conditions)) {
+        return [];
     }
 
     $glue  = ($andor === 0) ? ' AND ' : ' OR ';
@@ -30,6 +39,9 @@ function xpages_search(array $queryArray, int $andor, int $limit, int $offset, i
          . ' LIMIT ' . (int)$offset . ', ' . (int)$limit;
 
     $result = $db->query($sql);
+    if (!$result) {
+        return [];
+    }
     $ret    = [];
     while ($row = $db->fetchArray($result)) {
         $url = $row['alias']
@@ -37,7 +49,7 @@ function xpages_search(array $queryArray, int $andor, int $limit, int $offset, i
             : XOOPS_URL . '/modules/xpages/page.php?page_id=' . (int)$row['page_id'];
 
         $ret[] = [
-            'image' => XOOPS_URL . '/modules/xpages/images/logo.png',
+            'image' => XOOPS_URL . '/modules/xpages/assets/images/logo.png',
             'link'  => $url,
             'title' => htmlspecialchars($row['title'], ENT_QUOTES),
             'time'  => (int)$row['update_date'],

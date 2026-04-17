@@ -10,6 +10,10 @@ function xpages_dashboard_widgets() {
     $fieldHandler = xpages_get_handler('field');
     $galleryHandler = xpages_get_handler('gallery');
 
+    if (!$pageHandler || !$fieldHandler) {
+        return;
+    }
+
     // Son 5 sayfa
     $criteria = new CriteriaCompo();
     $criteria->setSort('update_date');

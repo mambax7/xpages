@@ -43,11 +43,11 @@ xPages - Advanced Static Page Management Module for XOOPS  xPages is a professio
 - Breadcrumb navigation
 
 📊 Dashboard
-- Statistics cards (Total pages, Active pages, Custom fields, Gallery images)- 
+- Statistics cards (Total pages, Active pages, Custom fields, Gallery images) 
 - Recent pages widget
-- - Most read pages widget
-- - Monthly page statistics chart
-- - Quick action buttons
+- Most read pages widget
+- Monthly page statistics chart
+- Quick action buttons
 
 🔧 Technical Features
 - XOOPS 2.7.0+ compatible

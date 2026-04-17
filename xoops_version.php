@@ -12,7 +12,7 @@ defined('XOOPS_ROOT_PATH') || die('XOOPS root path not defined');
 $modversion = [];
 
 $modversion['name']            = _MI_XPAGES_NAME;
-$modversion['version']         = '1.0.0';
+$modversion['version']         = '1.0.1';
 $modversion['description']     = _MI_XPAGES_DESC;
 $modversion['author']          = 'Eren Yumak — Aymak';
 $modversion['credits']         = 'Eren Yumak';
@@ -27,7 +27,7 @@ $modversion['hasAdmin']        = 1;
 $modversion['adminindex']      = 'admin/index.php';
 $modversion['adminmenu']       = 'admin/menu.php';
 $modversion['system_menu']     = 1;
-$modversion['hasmain']         = 1;
+$modversion['hasMain']         = 1;
 $modversion['mainfile']        = 'index.php';
 $modversion['sub']             = [];
 
@@ -37,6 +37,11 @@ $modversion['sqlfile']['mysql'] = 'sql/mysql.sql';
 $modversion['tables'][0] = 'xpages_pages';
 $modversion['tables'][1] = 'xpages_fields';
 $modversion['tables'][2] = 'xpages_field_values';
+$modversion['tables'][3] = 'xpages_gallery';
+
+$modversion['onInstall']   = 'include/install.php';
+$modversion['onUpdate']    = 'include/update.php';
+$modversion['onUninstall']  = 'include/uninstall.php';
 
 // ── Bloklar ───────────────────────────────────────────────────────────────────
 $modversion['blocks'][1] = [
@@ -132,9 +137,3 @@ $modversion['config'][6] = [
     'default'     => 1,
 ];
 
-// Admin menü bağlantılarına galeriyi ekleyin
-$adminmenu[] = [
-    'title' => '🖼️ Galeri',
-    'link'  => 'admin/gallery.php',
-    'icon'  => 'images/admin/gallery.png',
-];

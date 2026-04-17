@@ -17,21 +17,36 @@ if (class_exists('Xmf\\Module\\Admin')) {
 
 $pageHandler = xpages_get_handler('page');
 
+if (!$pageHandler) {
+    echo '<div style="margin:18px 0;padding:14px 16px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:6px">xPages handler unavailable.</div>';
+    xoops_cp_footer();
+    exit;
+}
+
 // ── Silme işlemi ──────────────────────────────────────────────────────────────
 if (!empty($_GET['op']) && $_GET['op'] === 'delete' && !empty($_GET['page_id'])) {
     $pageId = (int)$_GET['page_id'];
 
-    if (!isset($_GET['confirm'])) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['confirm'])) {
         $pageObj = $pageHandler->get($pageId);
         if ($pageObj) {
             echo '<div style="background:#fff3cd;border:1px solid #ffc107;padding:20px;margin:16px 0;border-radius:8px">';
             echo '<p style="font-size:15px;margin:0 0 14px">⚠️ ' . sprintf(_AM_XPAGES_DELETE_CONFIRM, htmlspecialchars((string)$pageObj->getVar('title'), ENT_QUOTES)) . '</p>';
-            echo '<div style="display:flex;gap:10px">';
-            echo '<a href="pages.php?op=delete&page_id=' . $pageId . '&confirm=1" style="background:#dc3545;color:#fff;padding:7px 16px;text-decoration:none;border-radius:5px">' . _AM_XPAGES_YES . '</a>';
+            echo '<form method="post" action="pages.php?op=delete&page_id=' . $pageId . '" style="display:flex;gap:10px;align-items:center">';
+            echo '<input type="hidden" name="op" value="delete">';
+            echo '<input type="hidden" name="page_id" value="' . $pageId . '">';
+            echo '<input type="hidden" name="confirm" value="1">';
+            echo $GLOBALS['xoopsSecurity']->getTokenHTML();
+            echo '<button type="submit" style="background:#dc3545;color:#fff;padding:7px 16px;border:none;border-radius:5px;cursor:pointer">' . _AM_XPAGES_YES . '</button>';
             echo '<a href="pages.php" style="background:#6c757d;color:#fff;padding:7px 16px;text-decoration:none;border-radius:5px">' . _AM_XPAGES_NO . '</a>';
-            echo '</div></div>';
+            echo '</form></div>';
         }
         xoops_cp_footer();
+        exit;
+    }
+
+    if (!$GLOBALS['xoopsSecurity']->check()) {
+        redirect_header('pages.php', 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
         exit;
     }
 
@@ -40,13 +55,20 @@ if (!empty($_GET['op']) && $_GET['op'] === 'delete' && !empty($_GET['page_id']))
         xpages_delete_page_data($pageId);
         $pageHandler->delete($pageObj);
         redirect_header('pages.php', 2, _AM_XPAGES_PAGE_DELETED);
+        exit;
     }
+    redirect_header('pages.php', 2, _AM_XPAGES_PAGE_NOT_FOUND);
     exit;
 }
 
 // ── Durum değiştir ────────────────────────────────────────────────────────────
-if (!empty($_GET['op']) && $_GET['op'] === 'toggle' && !empty($_GET['page_id'])) {
-    $pageObj = $pageHandler->get((int)$_GET['page_id']);
+if (!empty($_POST['op']) && $_POST['op'] === 'toggle' && !empty($_POST['page_id'])) {
+    if (!$GLOBALS['xoopsSecurity']->check()) {
+        redirect_header('pages.php', 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
+        exit;
+    }
+
+    $pageObj = $pageHandler->get((int)$_POST['page_id']);
     if ($pageObj) {
         $pageObj->setVar('page_status', (int)!$pageObj->getVar('page_status'));
         $pageHandler->insert($pageObj);
@@ -89,9 +111,13 @@ if (count($pages) > 0) {
         echo '<td style="padding:11px 14px"><strong>' . htmlspecialchars((string)$p->getVar('title'), ENT_QUOTES) . '</strong></td>';
         echo '<td style="padding:11px 14px"><code style="background:#f1f3f5;padding:2px 6px;border-radius:3px;font-size:12px">' . htmlspecialchars((string)$p->getVar('alias', 'n'), ENT_QUOTES) . '</code></td>';
         echo '<td style="padding:11px 14px;text-align:center">';
-        echo '<a href="pages.php?op=toggle&page_id=' . $pid . '" title="<?= _AM_XPAGES_TOGGLE_STATUS_TITLE ?>" style="text-decoration:none">';
+        echo '<form method="post" action="pages.php" style="display:inline;margin:0">';
+        echo '<input type="hidden" name="op" value="toggle">';
+        echo '<input type="hidden" name="page_id" value="' . $pid . '">';
+        echo $GLOBALS['xoopsSecurity']->getTokenHTML();
+        echo '<button type="submit" title="' . _AM_XPAGES_TOGGLE_STATUS_TITLE . '" style="background:none;border:none;padding:0;text-decoration:none;cursor:pointer">';
         echo $status ? _AM_XPAGES_STATUS_ACTIVE : _AM_XPAGES_STATUS_INACTIVE;
-        echo '</a></td>';
+        echo '</button></form></td>';
         echo '<td style="padding:11px 14px;text-align:center">' . (int)$p->getVar('menu_order') . '</td>';
         echo '<td style="padding:11px 14px;text-align:center">';
         echo '<div style="display:flex;gap:10px;justify-content:center">';
