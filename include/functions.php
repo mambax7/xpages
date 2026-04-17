@@ -472,3 +472,87 @@ function xpages_delete_page_data($pageId, array &$visited = array()) {
         $galleryHandler->deleteGalleryForPage($pageId);
     }
 }
+
+
+/**
+ * XOOPS editörlerini kontrol et ve listele
+ */
+function xpages_get_available_editors() {
+    $editors = [];
+    $editorPath = XOOPS_ROOT_PATH . '/class/xoopseditor';
+    
+    if (is_dir($editorPath)) {
+        $dirs = scandir($editorPath);
+        foreach ($dirs as $dir) {
+            if ($dir !== '.' && $dir !== '..' && is_dir($editorPath . '/' . $dir)) {
+                $editors[] = $dir;
+            }
+        }
+    }
+    
+    return $editors;
+}
+
+/**
+ * Editör render et (alternatif yöntem)
+ */
+function xpages_render_editor($name, $value, $rows = 25, $cols = '100%') {
+    $editorHtml = '';
+    
+    // XOOPS editör sistemini dene
+    if (file_exists(XOOPS_ROOT_PATH . '/class/xoopseditor/xoopseditor.php')) {
+        require_once XOOPS_ROOT_PATH . '/class/xoopseditor/xoopseditor.php';
+        
+        if (class_exists('XoopsEditorHandler')) {
+            $editorHandler = XoopsEditorHandler::getInstance();
+            $editors = $editorHandler->getList();
+            
+            // Önce TinyMCE dene
+            if (isset($editors['tinymce']) || isset($editors['tinymce7'])) {
+                $editorType = isset($editors['tinymce7']) ? 'tinymce7' : 'tinymce';
+                $editor = $editorHandler->get($editorType, [
+                    'name' => $name,
+                    'value' => $value,
+                    'rows' => $rows,
+                    'cols' => $cols,
+                    'width' => '100%',
+                    'height' => '400px'
+                ]);
+                if ($editor && method_exists($editor, 'render')) {
+                    $editorHtml = $editor->render();
+                }
+            }
+            // Sonra CKEditor dene
+            elseif (isset($editors['ckeditor'])) {
+                $editor = $editorHandler->get('ckeditor', [
+                    'name' => $name,
+                    'value' => $value,
+                    'rows' => $rows,
+                    'cols' => $cols
+                ]);
+                if ($editor && method_exists($editor, 'render')) {
+                    $editorHtml = $editor->render();
+                }
+            }
+            // En son dhtml dene
+            elseif (isset($editors['dhtml'])) {
+                $editor = $editorHandler->get('dhtml', [
+                    'name' => $name,
+                    'value' => $value,
+                    'rows' => $rows,
+                    'cols' => $cols
+                ]);
+                if ($editor && method_exists($editor, 'render')) {
+                    $editorHtml = $editor->render();
+                }
+            }
+        }
+    }
+    
+    // Hiçbir editör yoksa textarea döndür
+    if (empty($editorHtml)) {
+        $editorHtml = '<textarea name="' . htmlspecialchars($name, ENT_QUOTES) . '" id="' . htmlspecialchars($name, ENT_QUOTES) . '" rows="' . (int)$rows . '" style="width:100%;font-family:monospace">' . htmlspecialchars($value, ENT_QUOTES) . '</textarea>';
+    }
+    
+    return $editorHtml;
+}
