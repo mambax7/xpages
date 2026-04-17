@@ -98,6 +98,7 @@ define('_AM_XPAGES_YES',               'Evet');
 define('_AM_XPAGES_NO',                'Hayır');
 define('_AM_XPAGES_ACTIONS',           'İşlemler');
 define('_AM_XPAGES_BROWSE',            'Gözat');
+define('_AM_XPAGES_PAGETO',            'Sayfaya Git');
 
 // Mesajlar
 define('_AM_XPAGES_PAGE_SAVED',          'Sayfa başarıyla kaydedildi.');
