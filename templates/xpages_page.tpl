@@ -1,3 +1,54 @@
+<{* LightGallery CSS ve JS *}>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@2.7.0/css/lightgallery.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@2.7.0/css/lg-zoom.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lightgallery@2.7.0/css/lg-thumbnail.min.css">
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@2.7.0/lightgallery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@2.7.0/plugins/zoom/lg-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightgallery@2.7.0/plugins/thumbnail/lg-thumbnail.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    lightGallery(document.getElementById('xpages-lightgallery'), {
+        selector: '.gallery-item',
+        plugins: [lgZoom, lgThumbnail],
+        speed: 500,
+        showThumbByDefault: true,
+        zoom: true,
+        actualSize: true,
+        hash: false,
+        download: true,
+        counter: true,
+        controls: true,
+        loop: true,
+        mousewheel: true,
+        escKey: true,
+        thumbnail: true,
+        thumbWidth: 80,
+        thumbHeight: 80,
+        thumbMargin: 5
+    });
+});
+</script>
+
+<style>
+.lg-outer .lg-thumb-item {
+    border-radius: 4px;
+    border: 2px solid transparent;
+}
+.lg-outer .lg-thumb-item.active,
+.lg-outer .lg-thumb-item:hover {
+    border-color: #007bff;
+}
+.lg-toolbar .lg-icon {
+    color: #fff;
+}
+.lg-sub-html {
+    background: rgba(0,0,0,0.7);
+    font-size: 14px;
+}
+</style>
+
+
 <{* xPages — Tekil Sayfa Şablonu (DÜZELTİLMİŞ) *}>
 
 <{* Sayfa başı özel kod enjeksiyonu *}>
@@ -85,24 +136,37 @@
 		<{/if}>
 		
 		
-		<{* ── Galeri Bölümü ──────────────────────────────────────────────────────── *}>
+<{* ── Galeri Bölümü (LightGallery ile) ──────────────────────────────────────── *}>
 <{if $xpages_gallery}>
 <section class="xpages-gallery">
-    <h3><{$smarty.const._MD_XPAGES_GALLERY_TITLE}></h3>
-    <div class="xpages-gallery-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;margin-top:15px">
-        <{foreach item=g from=$xpages_gallery}>
-        <div class="xpages-gallery-item" style="border-radius:8px;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.1)">
-            <a href="<{$g.image_url|escape:'html'}>" data-lightbox="xpages-gallery" data-title="<{$g.title}>">
-                <img src="<{$g.image_url|escape:'html'}>" alt="<{$g.title}>" style="width:100%;height:150px;object-fit:cover">
-            </a>
-            <div style="padding:10px">
-                <h4 style="margin:0 0 5px;font-size:14px"><{$g.title}></h4>
-                <p style="margin:0;font-size:12px;color:#6c757d"><{$g.description}></p>
+    <div id="xpages-lightgallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px">
+        <{foreach item=g from=$xpages_gallery key=index}>
+        <a href="<{$g.image_url}>" class="gallery-item" data-src="<{$g.image_url}>" data-sub-html="<h4><{$g.title|escape:'html'}></h4><p><{$g.description|escape:'html'}></p>">
+            <div style="border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.1);transition:all 0.3s;background:#fff;height:100%">
+                <img src="<{$g.image_url}>" alt="<{$g.title|escape:'html'}>" loading="lazy" style="width:100%;height:220px;object-fit:cover;transition:transform 0.5s">
+                <div style="padding:12px">
+                    <h4 style="margin:0 0 6px;font-size:15px;color:#333"><{$g.title}></h4>
+                    <p style="margin:0;font-size:12px;color:#888;line-height:1.4"><{$g.description}></p>
+                </div>
             </div>
-        </div>
+        </a>
         <{/foreach}>
     </div>
 </section>
+
+<style>
+.gallery-item {
+    text-decoration: none;
+    display: block;
+}
+.gallery-item > div:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+.gallery-item > div:hover img {
+    transform: scale(1.03);
+}
+</style>
 <{/if}>
 
 <hr>
