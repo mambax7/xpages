@@ -29,3 +29,11 @@ define('_MI_XPAGES_SHOW_BREADCRUMB',      'Breadcrumb göster');
 define('_MI_XPAGES_SHOW_BREADCRUMB_DESC', 'Sayfa başlığının üstünde navigasyon yolu göster.');
 define('_MI_XPAGES_SHOW_LASTMOD',      'Son güncelleme tarihini göster');
 define('_MI_XPAGES_SHOW_LASTMOD_DESC', 'Sayfanın en son ne zaman düzenlendiğini göster.');
+// İlave alanlar için başlık
+define('_MD_XPAGES_EXTRA_FIELDS', 'Ek Bilgiler');
+// Menü
+define('_AM_XPAGES_MENU_MAIN',     'Ana Sayfa');
+define('_AM_XPAGES_MENU_PAGES',    'Sayfalar');
+define('_AM_XPAGES_MENU_ADD_PAGE', 'Sayfa Ekle');
+define('_AM_XPAGES_MENU_FIELDS',   'İlave Alanlar');
+define('_AM_XPAGES_MENU_ABOUT',    'Hakkında');
