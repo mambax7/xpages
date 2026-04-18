@@ -111,6 +111,7 @@ define('_AM_XPAGES_FIELD_SAVED',         'Field saved successfully.');
 define('_AM_XPAGES_FIELD_DELETED',       'Field deleted.');
 define('_AM_XPAGES_SAVE_ERROR',          'An error occurred while saving.');
 define('_AM_XPAGES_PAGE_NOT_FOUND',      'Page not found.');
+define('_AM_XPAGES_HANDLER_UNAVAILABLE', 'xPages handler unavailable. The module may be partially installed or its database tables are missing.');
 define('_AM_XPAGES_FIELD_NAME_EXISTS',   'This field name is already in use. Please choose a different name.');
 define('_AM_XPAGES_DELETE_CONFIRM',      'Are you sure you want to delete the page "%s"?');
 define('_AM_XPAGES_FIELD_DELETE_CONFIRM', 'Are you sure you want to delete the field "%s"?');

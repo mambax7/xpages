@@ -26,7 +26,7 @@ $fieldHandler = xpages_get_handler('field');
 $valueHandler = xpages_get_handler('fieldvalue');
 
 if (!$pageHandler || !$fieldHandler || !$valueHandler) {
-    echo '<div class="xp-alert xp-alert--error">xPages handler unavailable.</div>';
+    echo '<div class="xp-alert xp-alert--error">' . _AM_XPAGES_HANDLER_UNAVAILABLE . '</div>';
     xoops_cp_footer();
     exit;
 }

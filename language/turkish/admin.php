@@ -111,6 +111,7 @@ define('_AM_XPAGES_FIELD_SAVED',         'Alan başarıyla kaydedildi.');
 define('_AM_XPAGES_FIELD_DELETED',       'Alan silindi.');
 define('_AM_XPAGES_SAVE_ERROR',          'Kayıt sırasında hata oluştu.');
 define('_AM_XPAGES_PAGE_NOT_FOUND',      'Sayfa bulunamadı.');
+define('_AM_XPAGES_HANDLER_UNAVAILABLE', 'xPages handler kullanılamıyor. Modül kısmen kurulmuş olabilir ya da veritabanı tabloları eksik.');
 define('_AM_XPAGES_FIELD_NAME_EXISTS',   'Bu alan adı zaten kullanılıyor. Farklı bir ad seçin.');
 define('_AM_XPAGES_DELETE_CONFIRM',      '"%s" sayfasını silmek istediğinizden emin misiniz?');
 define('_AM_XPAGES_FIELD_DELETE_CONFIRM', '"%s" alanını silmek istediğinizden emin misiniz?');

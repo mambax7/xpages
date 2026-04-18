@@ -15,6 +15,10 @@ function xpages_comments_approve(int $itemId, int $commentCount): void
     require_once XOOPS_ROOT_PATH . '/modules/xpages/include/functions.php';
 
     $pageHandler = xpages_get_handler('page');
+    if ($pageHandler === null) {
+        return;
+    }
+
     $page = $pageHandler->get($itemId);
     if ($page) {
         $page->setVar('comments', $commentCount);
