@@ -85,34 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			<h3><{$smarty.const._MD_XPAGES_EXTRA_FIELDS}></h3>
 			<{foreach key=fid item=f from=$xpages_page.extra_fields_by_id}>
 				<{if $f.show_in_tpl && $f.value != ''}>
-				<div class="xpf xpf-<{$f.field_type}>" id="xpf-<{$fid}>">
-					<div class="xpf-label"><strong><{$f.field_label}>:</strong></div>
-					<div class="xpf-value">
-						<{if $f.field_type == 'file'}>
-							<{* Dosya/Resim gösterimi *}>
-							<{assign var="fileExt" value=$f.file_ext|lower}>
-							<{if $fileExt == 'jpg' || $fileExt == 'jpeg' || $fileExt == 'png' || $fileExt == 'gif' || $fileExt == 'webp'}>
-								<img src="<{$f.value|escape:'html'}>" alt="<{$f.field_label}>" class="xpf-file-image">
-							<{else}>
-								<a href="<{$f.value|escape:'html'}>" target="_blank" rel="noopener">📎 <{$smarty.const._MD_XPAGES_DOWNLOAD_FILE}></a>
-							<{/if}>
-						<{elseif $f.field_type == 'url'}>
-							<a href="<{$f.value|escape:'html'}>" target="_blank" rel="noopener"><{$f.value|escape:'html'}></a>
-						<{elseif $f.field_type == 'email'}>
-							<a href="mailto:<{$f.value|escape:'html'}>"><{$f.value|escape:'html'}></a>
-						<{elseif $f.field_type == 'checkbox'}>
-							<{if $f.value == 1 || $f.value == '1' || $f.value == 'on' || $f.value == 'yes'}>✓ <{$smarty.const._MD_XPAGES_YES}><{else}>✗ <{$smarty.const._MD_XPAGES_NO}><{/if}>
-						<{elseif $f.field_type == 'radio'}>
-							<span><{$f.value}></span>
-						<{elseif $f.field_type == 'select'}>
-							<span><{$f.value}></span>
-						<{elseif $f.field_type == 'textarea'}>
-							<div class="xpf-textarea-val"><{$f.value|nl2br nofilter}></div>
-						<{else}>
-							<span><{$f.value}></span>
-						<{/if}>
-					</div>
-				</div>
+					<{include file=$xpages_field_value_partial f=$f fid=$fid}>
 				<{/if}>
 			<{/foreach}>
 		</section>

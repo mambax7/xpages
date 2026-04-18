@@ -297,4 +297,13 @@ function xpages_assign_page($page, $xoopsTpl): void
     ]);
 
     $xoopsTpl->assign('xpages_gallery', $galleryData);
+
+    // Absolute path to the xpages_field_value.tpl partial. Passed as a
+    // template variable so xpages_page.tpl can <{include file=$var}>
+    // without depending on the DB-resource registration (which only
+    // activates after Module → Update installs the new template).
+    $xoopsTpl->assign(
+        'xpages_field_value_partial',
+        XOOPS_ROOT_PATH . '/modules/xpages/templates/xpages_field_value.tpl'
+    );
 }

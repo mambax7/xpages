@@ -75,6 +75,7 @@ $modversion['templates'][1]  = ['file' => 'xpages_index.tpl',        'descriptio
 $modversion['templates'][2]  = ['file' => 'xpages_page.tpl',         'description' => ''];
 $modversion['templates'][3]  = ['file' => 'xpages_block_recent.tpl', 'description' => ''];
 $modversion['templates'][4]  = ['file' => 'xpages_block_menu.tpl',   'description' => ''];
+$modversion['templates'][5]  = ['file' => 'xpages_field_value.tpl',  'description' => 'Public display partial for one extra-field value (included by xpages_page.tpl)'];
 
 // ── Arama ─────────────────────────────────────────────────────────────────────
 $modversion['hasSearch']     = 1;
