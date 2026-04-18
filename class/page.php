@@ -51,14 +51,17 @@ class XpagesPage extends XoopsObject
     /**
      * Robots meta etiketini döndür
      */
-    public function getRobots() {
-        $noindex  = $this->getVar('noindex');
-        $nofollow = $this->getVar('nofollow');
-        
-        if ($noindex && $nofollow) return 'noindex, nofollow';
-        if ($noindex) return 'noindex, follow';
-        if ($nofollow) return 'index, nofollow';
-        return 'index, follow';
+    public function getRobots(): string
+    {
+        $noindex  = (bool)$this->getVar('noindex');
+        $nofollow = (bool)$this->getVar('nofollow');
+
+        return match (true) {
+            $noindex && $nofollow => 'noindex, nofollow',
+            $noindex              => 'noindex, follow',
+            $nofollow             => 'index, nofollow',
+            default               => 'index, follow',
+        };
     }
 }
 
@@ -68,14 +71,7 @@ class XpagesPageHandler extends XoopsPersistableObjectHandler
     {
         parent::__construct($db, 'xpages_pages', 'XpagesPage', 'page_id', 'title');
     }
-    
-    /**
-     * Toplam kayıt sayısını döndür
-     */
-    public function getCount($criteria = null) {
-        return parent::getCount($criteria);
-    }
-    
+
     /**
      * Alias ile sayfa bul
      */

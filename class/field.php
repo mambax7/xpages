@@ -51,14 +51,7 @@ class XpagesFieldHandler extends XoopsPersistableObjectHandler
     {
         parent::__construct($db, 'xpages_fields', 'XpagesField', 'field_id', 'field_name');
     }
-    
-    /**
-     * Toplam kayıt sayısını döndür
-     */
-    public function getCount($criteria = null) {
-        return parent::getCount($criteria);
-    }
-    
+
     /**
      * Sayfaya ait alanları getir (DÜZELTİLDİ - CriteriaCompo kullanıldı)
      */
