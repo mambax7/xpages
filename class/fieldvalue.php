@@ -21,32 +21,37 @@ class XpagesFieldvalue extends XoopsObject
 
 class XpagesFieldvalueHandler extends XoopsPersistableObjectHandler
 {
-    public function __construct($db)
+    public function __construct(\XoopsDatabase $db)
     {
         parent::__construct($db, 'xpages_field_values', 'XpagesFieldvalue', 'value_id', 'field_value');
     }
 
     /**
      * Sayfaya ait tüm alan değerlerini getir
+     *
+     * @return array<int,string> field_id => field_value
      */
-    public function getValuesForPage($pageId) {
-        $values = [];
+    public function getValuesForPage(int $pageId): array
+    {
+        $values   = [];
         $criteria = new Criteria('page_id', $pageId);
-        $objects = $this->getObjects($criteria);
-        
-        foreach ($objects as $obj) {
-            $values[(int)$obj->getVar('field_id')] = $obj->getVar('field_value');
+        $objects  = $this->getObjects($criteria);
+
+        foreach ($objects ?: [] as $obj) {
+            $values[(int)$obj->getVar('field_id')] = (string)$obj->getVar('field_value');
         }
-        
+
         return $values;
     }
-    
 
-/**
- * Sayfa için alan değerlerini kaydet (TAMAMEN YENİLENDİ)
- */
-    public function saveValuesForPage($pageId, $values) {
-        if (!$pageId || !is_array($values)) return false;
+    /**
+     * Sayfa için alan değerlerini kaydet
+     */
+    public function saveValuesForPage(int $pageId, array $values): bool
+    {
+        if ($pageId <= 0) {
+            return false;
+        }
 
         $fieldHandler = xpages_get_handler('field');
         $uploadDir = XOOPS_UPLOAD_PATH . '/xpages/';
@@ -104,7 +109,8 @@ class XpagesFieldvalueHandler extends XoopsPersistableObjectHandler
     /**
      * Sayfaya ait tüm alan değerlerini sil
      */
-    public function deleteValuesForPage($pageId) {
+    public function deleteValuesForPage(int $pageId): bool
+    {
         $criteria = new Criteria('page_id', $pageId);
         $values = $this->getObjects($criteria) ?: [];
         $fieldHandler = xpages_get_handler('field');
@@ -127,7 +133,8 @@ class XpagesFieldvalueHandler extends XoopsPersistableObjectHandler
     /**
      * Belirli bir alanın tüm değerlerini sil
      */
-    public function deleteValuesForField($fieldId) {
+    public function deleteValuesForField(int $fieldId): bool
+    {
         $criteria = new Criteria('field_id', (int)$fieldId);
         $values = $this->getObjects($criteria) ?: [];
         $fieldHandler = xpages_get_handler('field');

@@ -24,7 +24,8 @@ class XpagesGallery extends XoopsObject
         $this->initVar('uid',           XOBJ_DTYPE_INT,    0,    false);
     }
     
-    public function getImageUrl() {
+    public function getImageUrl(): string
+    {
         $imageUrl = (string)$this->getVar('image_url', 'n');
         if ($imageUrl !== '') {
             return xpages_normalize_url($imageUrl);
@@ -39,12 +40,16 @@ class XpagesGallery extends XoopsObject
 
 class XpagesGalleryHandler extends XoopsPersistableObjectHandler
 {
-    public function __construct($db)
+    public function __construct(\XoopsDatabase $db)
     {
         parent::__construct($db, 'xpages_gallery', 'XpagesGallery', 'gallery_id', 'title');
     }
-    
-    public function getGalleryForPage($pageId, $onlyActive = true) {
+
+    /**
+     * @return XpagesGallery[]
+     */
+    public function getGalleryForPage(int $pageId, bool $onlyActive = true): array
+    {
         $criteria = new CriteriaCompo();
         $criteria->add(new Criteria('page_id', $pageId));
         if ($onlyActive) {
@@ -52,22 +57,26 @@ class XpagesGalleryHandler extends XoopsPersistableObjectHandler
         }
         $criteria->setSort('image_order');
         $criteria->setOrder('ASC');
-        
-        return $this->getObjects($criteria);
+
+        return $this->getObjects($criteria) ?: [];
     }
-    
-    public function getCountForPage($pageId) {
+
+    public function getCountForPage(int $pageId): int
+    {
         $criteria = new Criteria('page_id', $pageId);
-        return $this->getCount($criteria);
+        return (int)$this->getCount($criteria);
     }
-    
-    public function deleteGalleryForPage($pageId) {
+
+    public function deleteGalleryForPage(int $pageId): bool
+    {
         $gallery = $this->getGalleryForPage($pageId, false);
         foreach ($gallery as $item) {
-            // Dosyayı sil
-            $filePath = XOOPS_UPLOAD_PATH . '/xpages/gallery/' . $item->getVar('image_path');
-            if (file_exists($filePath)) {
-                @unlink($filePath);
+            $safeFile = xpages_safe_filename((string)$item->getVar('image_path', 'n'));
+            if ($safeFile !== '') {
+                $filePath = XOOPS_UPLOAD_PATH . '/xpages/gallery/' . $safeFile;
+                if (file_exists($filePath)) {
+                    @unlink($filePath);
+                }
             }
             $this->delete($item);
         }

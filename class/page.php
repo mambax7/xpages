@@ -40,12 +40,13 @@ class XpagesPage extends XoopsObject
     /**
      * Sayfa URL'ini döndür
      */
-    public function getPageUrl() {
-        $alias = $this->getVar('alias');
-        if (!empty($alias)) {
+    public function getPageUrl(): string
+    {
+        $alias = (string)$this->getVar('alias');
+        if ($alias !== '') {
             return XOOPS_URL . '/modules/xpages/page.php?alias=' . urlencode($alias);
         }
-        return XOOPS_URL . '/modules/xpages/page.php?page_id=' . $this->getVar('page_id');
+        return XOOPS_URL . '/modules/xpages/page.php?page_id=' . (int)$this->getVar('page_id');
     }
     
     /**
@@ -67,7 +68,7 @@ class XpagesPage extends XoopsObject
 
 class XpagesPageHandler extends XoopsPersistableObjectHandler
 {
-    public function __construct($db)
+    public function __construct(\XoopsDatabase $db)
     {
         parent::__construct($db, 'xpages_pages', 'XpagesPage', 'page_id', 'title');
     }
@@ -75,18 +76,22 @@ class XpagesPageHandler extends XoopsPersistableObjectHandler
     /**
      * Alias ile sayfa bul
      */
-    public function getByAlias($alias) {
+    public function getByAlias(string $alias): ?XpagesPage
+    {
         $criteria = new Criteria('alias', $alias);
-        $objects = $this->getObjects($criteria);
+        $objects  = $this->getObjects($criteria);
         return !empty($objects) ? $objects[0] : null;
     }
 
     /**
      * Menüde gösterilecek sayfaları getir
+     *
+     * @return XpagesPage[]
      */
-    public function getMenuPages($parentId = 0, $onlyActive = true) {
+    public function getMenuPages(int $parentId = 0, bool $onlyActive = true): array
+    {
         $criteria = new CriteriaCompo();
-        $criteria->add(new Criteria('parent_id', (int)$parentId));
+        $criteria->add(new Criteria('parent_id', $parentId));
         $criteria->add(new Criteria('show_in_menu', 1));
 
         if ($onlyActive) {
@@ -96,41 +101,43 @@ class XpagesPageHandler extends XoopsPersistableObjectHandler
         $criteria->setSort('menu_order');
         $criteria->setOrder('ASC');
 
-        return $this->getObjects($criteria);
+        return $this->getObjects($criteria) ?: [];
     }
-    
+
     /**
      * Benzersiz alias oluştur
      */
-    public function generateAlias($title, $excludeId = 0) {
-        $alias = $this->cleanAlias($title);
+    public function generateAlias(string $title, int $excludeId = 0): string
+    {
+        $alias    = $this->cleanAlias($title);
         $original = $alias;
-        $counter = 1;
-        
+        $counter  = 1;
+
         while ($this->aliasExists($alias, $excludeId)) {
             $alias = $original . '-' . $counter;
             $counter++;
         }
-        
+
         return $alias;
     }
-    
+
     /**
      * Alias temizleme
      */
-    private function cleanAlias($str) {
+    private function cleanAlias(string $str): string
+    {
         $str = mb_strtolower($str, 'UTF-8');
         $str = preg_replace('/[^a-z0-9-]/', '-', $str);
         $str = preg_replace('/-+/', '-', $str);
         $str = trim($str, '-');
-        return $str ?: 'page';
+        return $str !== '' ? $str : 'page';
     }
-    
+
     /**
-     * Alias var mı kontrol et (DÜZELTİLDİ - CriteriaCompo kullanıldı)
+     * Alias var mı kontrol et
      */
-    private function aliasExists($alias, $excludeId = 0) {
-        // CriteriaCompo kullan (add metodu olan)
+    private function aliasExists(string $alias, int $excludeId = 0): bool
+    {
         $criteria = new CriteriaCompo();
         $criteria->add(new Criteria('alias', $alias));
         if ($excludeId > 0) {
@@ -138,13 +145,14 @@ class XpagesPageHandler extends XoopsPersistableObjectHandler
         }
         return $this->getCount($criteria) > 0;
     }
-    
+
     /**
      * Hit sayısını artır
      */
-    public function incrementHits($pageId) {
-        $sql = "UPDATE {$this->table} SET hits = hits + 1 WHERE page_id = " . (int)$pageId;
+    public function incrementHits(int $pageId): bool
+    {
+        $sql = "UPDATE {$this->table} SET hits = hits + 1 WHERE page_id = " . $pageId;
         // XOOPS 2.7: exec() for mutating statements (queryF is deprecated).
-        return $this->db->exec($sql);
+        return (bool)$this->db->exec($sql);
     }
 }
