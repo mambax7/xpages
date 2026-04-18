@@ -242,6 +242,13 @@
     font-size: 13px;
     cursor: pointer;
     color: #fff;
+     border: 1px solid #ccc;
+    font-weight: bold;
+}
+
+.xp-btn:hover {
+    text-decoration: none;
+    color: #333740;
 }
 .xp-btn--add     { background: #28a745; }
 .xp-btn--primary { background: #4472c4; padding: 6px 14px; border-radius: 4px; }
