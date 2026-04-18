@@ -1,0 +1,30 @@
+parameters:
+    level: 5
+    phpVersion:
+        min: 80200
+        max: 80599
+    paths:
+        - admin
+        - blocks
+        - class
+        - include
+        - preloads
+        - index.php
+        - page.php
+        - xoops_version.php
+    excludePaths:
+        - vendor
+        - tests
+        - docs
+    ignoreErrors:
+        # XOOPS core globals / functions are untyped — we can't reason
+        # about them without stubs. Shelve these at level 5 and raise
+        # when stubs are available.
+        - identifier: function.notFound
+          message: '#Function (redirect_header|xoops_cp_header|xoops_cp_footer|xoops_getHandler|xoops_isActiveModule|xoops_getModuleHandler|xoops_loadLanguage) not found\.#'
+        - identifier: class.notFound
+          message: '#Class (XoopsObject|XoopsObjectHandler|XoopsPersistableObjectHandler|XoopsDatabase|XoopsDatabaseFactory|XoopsTpl|XoopsEditorHandler|XoopsModule|Criteria|CriteriaCompo|Xoops|XoopsCache|XoopsLists) not found\.#'
+
+    # Baseline generated on first run: vendor/bin/phpstan analyse --generate-baseline
+    # bootstrapFiles:
+    #     - tests/bootstrap.php

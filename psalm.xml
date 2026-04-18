@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="5"
+    resolveFromConfigFile="true"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="false"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+>
+    <projectFiles>
+        <directory name="admin" />
+        <directory name="blocks" />
+        <directory name="class" />
+        <directory name="include" />
+        <directory name="preloads" />
+        <file name="index.php" />
+        <file name="page.php" />
+        <file name="xoops_version.php" />
+        <ignoreFiles>
+            <directory name="vendor" />
+            <directory name="tests" />
+            <directory name="docs" />
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <!-- XOOPS core is untyped; suppress until we have stubs. -->
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="XoopsObject" />
+                <referencedClass name="XoopsObjectHandler" />
+                <referencedClass name="XoopsPersistableObjectHandler" />
+                <referencedClass name="XoopsDatabase" />
+                <referencedClass name="XoopsDatabaseFactory" />
+                <referencedClass name="XoopsTpl" />
+                <referencedClass name="XoopsEditorHandler" />
+                <referencedClass name="XoopsModule" />
+                <referencedClass name="Criteria" />
+                <referencedClass name="CriteriaCompo" />
+                <referencedClass name="Xoops" />
+                <referencedClass name="XoopsCache" />
+                <referencedClass name="XoopsLists" />
+            </errorLevel>
+        </UndefinedClass>
+        <UndefinedFunction>
+            <errorLevel type="suppress">
+                <referencedFunction name="redirect_header" />
+                <referencedFunction name="xoops_cp_header" />
+                <referencedFunction name="xoops_cp_footer" />
+                <referencedFunction name="xoops_getHandler" />
+                <referencedFunction name="xoops_isActiveModule" />
+                <referencedFunction name="xoops_getModuleHandler" />
+                <referencedFunction name="xoops_loadLanguage" />
+            </errorLevel>
+        </UndefinedFunction>
+    </issueHandlers>
+</psalm>
