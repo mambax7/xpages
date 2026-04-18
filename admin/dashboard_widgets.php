@@ -62,19 +62,19 @@ function xpages_dashboard_widgets() {
             <div class="xpages-widget-header"><?= _AM_XPAGES_WIDGET_STATS ?></div>
             <div class="xpages-widget-content">
                 <div class="xpages-stat-cards">
-                    <div class="xpages-stat-card" style="background:linear-gradient(135deg,#667eea,#764ba2)">
+                    <div class="xpages-stat-card xpages-stat-card--purple">
                         <h3><?= $totalPages ?></h3>
                         <p><?= _AM_XPAGES_STAT_TOTAL_PAGES ?></p>
                     </div>
-                    <div class="xpages-stat-card" style="background:linear-gradient(135deg,#10b981,#059669)">
+                    <div class="xpages-stat-card xpages-stat-card--green">
                         <h3><?= $activePages ?></h3>
                         <p><?= _AM_XPAGES_STAT_ACTIVE_PAGES ?></p>
                     </div>
-                    <div class="xpages-stat-card" style="background:linear-gradient(135deg,#3b82f6,#2563eb)">
+                    <div class="xpages-stat-card xpages-stat-card--blue">
                         <h3><?= $totalFields ?></h3>
                         <p><?= _AM_XPAGES_STAT_FIELDS_COUNT ?></p>
                     </div>
-                    <div class="xpages-stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+                    <div class="xpages-stat-card xpages-stat-card--orange">
                         <h3><?= $totalImages ?></h3>
                         <p><?= _AM_XPAGES_STAT_GALLERY_COUNT ?></p>
                     </div>
@@ -87,7 +87,7 @@ function xpages_dashboard_widgets() {
             <div class="xpages-widget-header"><?= _AM_XPAGES_WIDGET_RECENT ?></div>
             <div class="xpages-widget-content">
                 <?php if (empty($recentPages)): ?>
-                    <p style="color:#6c757d;text-align:center"><?= _AM_XPAGES_NO_PAGES_YET ?></p>
+                    <p class="xpages-empty-muted"><?= _AM_XPAGES_NO_PAGES_YET ?></p>
                 <?php else: ?>
                     <ul class="xpages-list">
                     <?php foreach ($recentPages as $page): ?>
@@ -101,8 +101,8 @@ function xpages_dashboard_widgets() {
                         </li>
                     <?php endforeach; ?>
                     </ul>
-                    <div style="margin-top:10px;text-align:center">
-                        <a href="pages.php" style="color:#007bff;font-size:12px"><?= _AM_XPAGES_SEE_ALL_PAGES ?></a>
+                    <div class="xpages-see-all">
+                        <a href="pages.php"><?= _AM_XPAGES_SEE_ALL_PAGES ?></a>
                     </div>
                 <?php endif; ?>
             </div>
@@ -113,7 +113,7 @@ function xpages_dashboard_widgets() {
             <div class="xpages-widget-header"><?= _AM_XPAGES_WIDGET_POPULAR ?></div>
             <div class="xpages-widget-content">
                 <?php if (empty($popularPages)): ?>
-                    <p style="color:#6c757d;text-align:center"><?= _AM_XPAGES_NO_STATS ?></p>
+                    <p class="xpages-empty-muted"><?= _AM_XPAGES_NO_STATS ?></p>
                 <?php else: ?>
                     <ul class="xpages-list">
                     <?php foreach ($popularPages as $page): ?>
@@ -144,7 +144,7 @@ function xpages_dashboard_widgets() {
                     ?>
                     <div class="xpages-chart-bar">
                         <div class="xpages-chart-bar-label"><?= $stat['month'] ?></div>
-                        <div class="xpages-chart-bar-fill" style="width: <?= $percent ?>%; min-width: 30px">
+                        <div class="xpages-chart-bar-fill" style="width:<?= (float)$percent ?>%">
                             <?= $stat['count'] ?>
                         </div>
                     </div>
@@ -157,10 +157,10 @@ function xpages_dashboard_widgets() {
         <div class="xpages-widget">
             <div class="xpages-widget-header"><?= _AM_XPAGES_WIDGET_QUICK ?></div>
             <div class="xpages-widget-content">
-                <div style="display:flex;flex-direction:column;gap:10px">
-                    <a href="page_edit.php" style="background:#10b981;color:#fff;padding:10px;text-align:center;text-decoration:none;border-radius:6px"><?= _AM_XPAGES_BTN_NEW_PAGE ?></a>
-                    <a href="fields.php" style="background:#3b82f6;color:#fff;padding:10px;text-align:center;text-decoration:none;border-radius:6px"><?= _AM_XPAGES_BTN_NEW_FIELD ?></a>
-                    <a href="pages.php" style="background:#6c757d;color:#fff;padding:10px;text-align:center;text-decoration:none;border-radius:6px"><?= _AM_XPAGES_BTN_LIST_PAGES ?></a>
+                <div class="xpages-quick-column">
+                    <a href="page_edit.php" class="xp-btn xp-btn--block xp-btn--green"><?= _AM_XPAGES_BTN_NEW_PAGE ?></a>
+                    <a href="fields.php" class="xp-btn xp-btn--block xp-btn--blue"><?= _AM_XPAGES_BTN_NEW_FIELD ?></a>
+                    <a href="pages.php" class="xp-btn xp-btn--block xp-btn--cancel"><?= _AM_XPAGES_BTN_LIST_PAGES ?></a>
                 </div>
             </div>
         </div>
@@ -169,7 +169,7 @@ function xpages_dashboard_widgets() {
         <div class="xpages-widget">
             <div class="xpages-widget-header"><?= _AM_XPAGES_WIDGET_SYSINFO ?></div>
             <div class="xpages-widget-content">
-                <ul class="xpages-list" style="margin:0">
+                <ul class="xpages-sysinfo-list">
                     <li><strong><?= _AM_XPAGES_SYSINFO_XOOPS ?></strong> <?= htmlspecialchars(XOOPS_VERSION, ENT_QUOTES) ?></li>
                     <li><strong><?= _AM_XPAGES_SYSINFO_MODULE ?></strong> 1.0</li>
                     <li><strong><?= _AM_XPAGES_SYSINFO_PHP ?></strong> <?= phpversion() ?></li>
