@@ -312,6 +312,59 @@
 }
 
 /* ==========================================================================
+   Form-card container (white padded card wrapping an edit form)
+   ========================================================================== */
+.xp-form-card {
+    background: #fff;
+    padding: 22px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
+    margin-top: 16px;
+}
+.xp-form-card h3 {
+    margin: 0 0 18px;
+    font-size: 16px;
+}
+
+/* Small muted "(global)" scope marker next to field names */
+.xp-scope-label {
+    color: #6c757d;
+    font-size: 11px;
+}
+
+/* Muted text-link used after submit buttons (cancel to previous view) */
+.xp-cancel-link {
+    margin-left: 12px;
+    color: #6c757d;
+    font-size: 13px;
+    text-decoration: none;
+}
+.xp-cancel-link:hover {
+    text-decoration: underline;
+}
+
+/* Small thumbnail inside a data table cell (50×50 image preview) */
+.xp-thumb-sm {
+    max-width: 50px;
+    max-height: 50px;
+    margin-top: 5px;
+    border-radius: 4px;
+}
+
+/* Utility classes */
+.xp-hidden       { display: none; }
+.xp-text-muted   { color: #6c757d; }
+.xp-text-small   { font-size: 11px; }
+.xp-input-small  { width: 100px; }
+.xp-margin-top-8 { margin-top: 8px; }
+
+/* .xp-toolbar variant for "title + inline muted label" (no space-between) */
+.xp-toolbar--inline {
+    justify-content: flex-start;
+    gap: 10px;
+}
+
+/* ==========================================================================
    Advanced-code warning (page_edit.php — header_code/footer_code)
    ========================================================================== */
 .xp-adv-warning {
