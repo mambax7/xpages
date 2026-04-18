@@ -1,0 +1,44 @@
+<h5>1.1.0       [UNRELEASED]</h5>  Dev: XOOPS 2.7, PHP 8.2+
+<hr>
+Security
+ - enforced per-module admin ACL via isAdmin($mid) in every admin controller
+ - header/footer_code fields now gated behind an admin UI warning plus audit log
+ - queryF()/query() mutations replaced with exec() per XOOPS 2.7 guidance
+ - Xmf\Request adopted for every $_GET / $_POST / $_REQUEST read; manual
+   htmlspecialchars() on raw superglobals removed where |escape handles it
+ - url-scheme allowlist + html_entity_decode before check in xpages_normalize_url
+ - xpages_safe_filename() applied before every unlink / upload path build
+
+Refactoring
+ - all admin controller HTML moved to Smarty templates/admin/*.tpl
+ - public CSS split to assets/css/style.css; admin CSS to assets/css/admin.css
+ - inline styles removed in favour of BEM-style .xp-* / .xpages-* classes
+ - extra-field input partial (xpages_field_input.tpl) + XpagesFieldDescriptor
+   readonly value object + XpagesFieldType backed string enum
+ - admin dashboard widgets (admin/index.php + admin/dashboard_widgets.php)
+   flattened to controller-prepared descriptor arrays
+ - XMF-based module Helper (class/Helper.php) with singleton access,
+   replacing the hand-rolled xpages_get_handler() registry
+
+Modernisation (PHP 8.2+ / Smarty 4)
+ - declare(strict_types=1) on every PHP file
+ - str_starts_with / null-coalescing idioms
+ - match(true) for XpagesPage::getRobots()
+ - parameter + return types on every handler method
+ - preloads/autoloader.php PSR-4 for XoopsModules\Xpages\*
+ - removed redundant getCount() pass-through overrides
+ - |default: template filters on conditionally-assigned public vars
+
+Housekeeping
+ - stale admin/page_edit-*.bak / -1.php backups removed
+ - .gitignore at module root (IDE state, editor backups, analysis caches,
+   internal review notes)
+ - docs/ folder populated: changelog.txt (this file)
+
+<h5>1.0.1       [2026-04-17]</h5>
+<hr>
+- initial baseline cleanup sweep: manifest tightened, stale files removed
+
+<h5>1.0.0       [initial release]</h5>
+<hr>
+- static-page / extra-fields / gallery module for XOOPS 2.7

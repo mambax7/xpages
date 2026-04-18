@@ -2,6 +2,17 @@
     DirectoryIndex index.php
 </IfModule>
 
+# Block direct HTTP access to editor/backup artefacts that shouldn't
+# ship but might sneak in. Silent 404 for *.bak, *.orig, *.backup,
+# trailing-tilde files, and dotfiles (except .htaccess itself).
+<FilesMatch "(\.(bak|orig|backup|swp|swo)$|~$)">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^\.(?!htaccess)">
+    Require all denied
+</FilesMatch>
+
 # Eğer mod_rewrite sorunu varsa
 <IfModule mod_rewrite.c>
     RewriteEngine On

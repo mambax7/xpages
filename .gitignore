@@ -1,0 +1,29 @@
+# IDE / editor state
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Editor backups
+*.bak
+*.orig
+*.backup
+
+# OS artifacts
+Thumbs.db
+.DS_Store
+
+# PHPUnit / static-analysis caches
+/phpunit.result.cache
+/.phpunit.cache/
+/.phpstan-cache/
+/.psalm-cache/
+
+# Internal review / working docs (not part of the distribution)
+/docs/tasks.md
+
+# Local Smarty / XOOPS compiled output (should never be in a module dir,
+# but guard anyway so accidental mkdir's don't leak into commits)
+/templates_c/
+/cache/
