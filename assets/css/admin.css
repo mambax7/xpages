@@ -120,6 +120,11 @@
     background: #3461b0;
 }
 
+/* Monospace textarea for raw-code fields (header_code / footer_code) */
+.xp-code-textarea {
+    font-family: monospace;
+}
+
 /* File field wrapper */
 .xpages-file-field {
     background: #f8f9fa;
@@ -174,6 +179,14 @@
     text-align: center;
     font-size: 13px;
 }
+.xp-alert--muted {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #6c757d;
+    margin: 0;
+}
 
 /* ==========================================================================
    Admin toolbar (page header with title + primary action)
@@ -212,9 +225,15 @@
     color: #fff;
 }
 .xp-btn--add     { background: #28a745; }
-.xp-btn--primary { background: #007bff; }
+.xp-btn--primary { background: #4472c4; padding: 6px 14px; border-radius: 4px; }
+.xp-btn--warning { background: #f59e0b; padding: 6px 14px; border-radius: 4px; display: inline-block; }
 .xp-btn--danger  { background: #dc3545; padding: 7px 16px; border-radius: 5px; }
 .xp-btn--cancel  { background: #6c757d; padding: 7px 16px; border-radius: 5px; }
+.xp-btn:disabled,
+.xp-btn[disabled] {
+    background: #ccc;
+    cursor: not-allowed;
+}
 .xp-btn--unstyled {
     background: none;
     border: none;

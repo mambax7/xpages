@@ -23,7 +23,7 @@ $fieldHandler = xpages_get_handler('field');
 $valueHandler = xpages_get_handler('fieldvalue');
 
 if (!$pageHandler || !$fieldHandler || !$valueHandler) {
-    echo '<div style="margin:18px 0;padding:14px 16px;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;border-radius:6px">xPages handler unavailable.</div>';
+    echo '<div class="xp-alert xp-alert--error">xPages handler unavailable.</div>';
     xoops_cp_footer();
     exit;
 }
@@ -136,7 +136,7 @@ if ($op === 'save') {
     $page->setVar('update_date', time());
 
     if (!$pageHandler->insert($page)) {
-        echo '<div style="color:#721c24;background:#f8d7da;border:1px solid #f5c6cb;padding:12px;border-radius:6px;margin-bottom:16px">' . _AM_XPAGES_SAVE_ERROR . '</div>';
+        echo '<div class="xp-alert xp-alert--error">' . _AM_XPAGES_SAVE_ERROR . '</div>';
     } else {
         $savedId = (int)$page->getVar('page_id');
 
@@ -300,23 +300,23 @@ $blockedParentIds = array_flip($descendantIds);
     <!-- TAB: Gelişmiş -->
     <div id="tab-adv" class="xp-tab-pane">
         <?php if ($canUseAdvancedCode): ?>
-            <div role="alert" class="xp-adv-warning" style="background:#fff3cd;border:1px solid #ffc107;border-left:4px solid #dc3545;padding:12px 14px;margin-bottom:16px;border-radius:6px;font-size:13px;color:#3b2b00">
+            <div role="alert" class="xp-adv-warning">
                 <strong>⚠ </strong><?= _AM_XPAGES_ADVANCED_CODE_WARNING ?>
             </div>
             <div class="xpages-field">
                 <label><?= _AM_XPAGES_HEADER_CODE ?></label>
-                <textarea name="header_code" rows="5" style="font-family:monospace"><?= htmlspecialchars((string)$page->getVar('header_code', 'n'), ENT_QUOTES) ?></textarea>
+                <textarea name="header_code" rows="5" class="xp-code-textarea"><?= htmlspecialchars((string)$page->getVar('header_code', 'n'), ENT_QUOTES) ?></textarea>
                 <small class="xpf-desc"><?= _AM_XPAGES_HEADER_CODE_HELP ?></small>
             </div>
             <div class="xpages-field">
                 <label><?= _AM_XPAGES_FOOTER_CODE ?></label>
-                <textarea name="footer_code" rows="5" style="font-family:monospace"><?= htmlspecialchars((string)$page->getVar('footer_code', 'n'), ENT_QUOTES) ?></textarea>
+                <textarea name="footer_code" rows="5" class="xp-code-textarea"><?= htmlspecialchars((string)$page->getVar('footer_code', 'n'), ENT_QUOTES) ?></textarea>
                 <small class="xpf-desc"><?= _AM_XPAGES_FOOTER_CODE_HELP ?></small>
             </div>
         <?php else: ?>
             <div class="xpages-field">
                 <label><?= _AM_XPAGES_HEADER_CODE ?></label>
-                <div style="padding:10px 12px;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;color:#6c757d">
+                <div class="xp-alert xp-alert--muted">
                     <?= _AM_XPAGES_ADVANCED_CODE_RESTRICTED ?>
                 </div>
             </div>
@@ -324,17 +324,17 @@ $blockedParentIds = array_flip($descendantIds);
         <?php if ($pageId): ?>
             <div class="xpages-field">
                 <label><?= _AM_XPAGES_MANAGE_FIELDS_FOR_PAGE ?></label>
-                <a href="fields.php?page_id=<?= $pageId ?>" style="background:#4472c4;color:#fff;padding:6px 14px;text-decoration:none;border-radius:4px;font-size:13px"><?= _AM_XPAGES_MENU_FIELDS ?></a>
+                <a href="fields.php?page_id=<?= $pageId ?>" class="xp-btn xp-btn--primary"><?= _AM_XPAGES_MENU_FIELDS ?></a>
             </div>
             <div class="xpages-field">
                 <label><?= _AM_XPAGES_GALLERY_TITLE ?></label>
-                <a href="gallery.php?page_id=<?= $pageId ?>" style="background:#f59e0b;color:#fff;padding:6px 14px;text-decoration:none;border-radius:4px;font-size:13px;display:inline-block"><?= _AM_XPAGES_GALLERY_MANAGE ?></a>
+                <a href="gallery.php?page_id=<?= $pageId ?>" class="xp-btn xp-btn--warning"><?= _AM_XPAGES_GALLERY_MANAGE ?></a>
                 <small class="xpf-desc"><?= _AM_XPAGES_GALLERY_MANAGE_HELP ?></small>
             </div>
         <?php else: ?>
             <div class="xpages-field">
                 <label><?= _AM_XPAGES_GALLERY_TITLE ?></label>
-                <button type="button" disabled style="background:#ccc;padding:6px 14px;border-radius:4px;border:none"><?= _AM_XPAGES_GALLERY_SAVE_FIRST ?></button>
+                <button type="button" class="xp-btn" disabled><?= _AM_XPAGES_GALLERY_SAVE_FIRST ?></button>
                 <small class="xpf-desc"><?= _AM_XPAGES_GALLERY_SAVE_FIRST_HELP ?></small>
             </div>
         <?php endif; ?>
@@ -353,7 +353,7 @@ $blockedParentIds = array_flip($descendantIds);
 
     <br>
     <input type="submit" value="<?= _AM_XPAGES_SAVE ?>" class="formButton">
-    &nbsp;<a href="pages.php" style="color:#6c757d;font-size:13px"><?= _AM_XPAGES_CANCEL ?></a>
+    <a href="pages.php" class="xp-cancel-link"><?= _AM_XPAGES_CANCEL ?></a>
 </form>
 
 <script>
