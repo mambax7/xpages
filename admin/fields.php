@@ -5,6 +5,8 @@
  * @author   Eren Yumak — Aymak (aymak.net)
  */
 
+use Xmf\Request;
+
 include_once '../../../include/cp_header.php';
 require_once XOOPS_ROOT_PATH . '/modules/xpages/include/functions.php';
 xpages_admin_boot();
@@ -25,9 +27,10 @@ if (!$fieldHandler || !$pageHandler || !$valueHandler) {
     exit;
 }
 
-$pageId  = isset($_GET['page_id'])   ? (int)$_GET['page_id']   : (isset($_POST['page_id'])  ? (int)$_POST['page_id']  : 0);
-$op      = $_GET['op']  ?? $_POST['op']  ?? 'list';
-$fieldId = isset($_GET['field_id'])  ? (int)$_GET['field_id']  : (isset($_POST['field_id']) ? (int)$_POST['field_id'] : 0);
+// Request::getInt / getCmd default to reading GET then POST when method='REQUEST'.
+$pageId  = Request::getInt('page_id',  0,       'REQUEST');
+$op      = Request::getCmd('op',       'list',  'REQUEST');
+$fieldId = Request::getInt('field_id', 0,       'REQUEST');
 
 $pageObj   = $pageId ? $pageHandler->get($pageId) : null;
 $pageTitle = $pageObj ? htmlspecialchars((string)$pageObj->getVar('title'), ENT_QUOTES) : _AM_XPAGES_GLOBAL_FIELDS;
@@ -43,7 +46,7 @@ if ($pageId && $pageObj) {
 
 // ── Sil ───────────────────────────────────────────────────────────────────────
 if ($op === 'delete' && $fieldId) {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['confirm'])) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || 1 !== Request::getInt('confirm', 0, 'POST')) {
         $fobj = $fieldHandler->get($fieldId);
         if ($fobj) {
             echo '<div style="background:#fff3cd;border:1px solid #ffc107;padding:18px;margin-bottom:16px;border-radius:8px">';
@@ -100,13 +103,13 @@ if ($op === 'save') {
     $field = $fieldId ? $fieldHandler->get($fieldId) : $fieldHandler->create();
     $oldType = $fieldId ? $field->getVar('field_type') : '';
 
-    $fname = preg_replace('/[^a-z0-9_]/', '', strtolower(trim($_POST['field_name'] ?? '')));
+    $fname = preg_replace('/[^a-z0-9_]/', '', strtolower(trim(Request::getString('field_name', '', 'POST'))));
     if (empty($fname)) {
         $fname = 'field_' . time();
     }
-    
+
 // field_options değerini al ve temizle (RADIO/SELECT için)
-$fieldOptions = $_POST['field_options'] ?? '';
+$fieldOptions = Request::getString('field_options', '', 'POST');
 // Önce HTML entity'leri dönüştür
 $fieldOptions = html_entity_decode($fieldOptions, ENT_QUOTES, 'UTF-8');
 // <br> etiketlerini newline'e çevir
@@ -131,21 +134,21 @@ $fieldOptions = implode("\n", $cleanLines);
     } else {
         $field->setVar('page_id',        $pageId);
         $field->setVar('field_name',     $fname);
-        $field->setVar('field_label',    $_POST['field_label']    ?? '');
-        $field->setVar('field_type',     $_POST['field_type']     ?? 'text');
+        $field->setVar('field_label',    Request::getString('field_label',    '',     'POST'));
+        $field->setVar('field_type',     Request::getString('field_type',     'text', 'POST'));
         $field->setVar('field_options',  $fieldOptions);  // Orijinal haliyle kaydet
-        $field->setVar('field_required', (int)($_POST['field_required'] ?? 0));
-        $field->setVar('field_order',    (int)($_POST['field_order']    ?? 0));
-        $field->setVar('field_status',   (int)($_POST['field_status']   ?? 1));
-        $field->setVar('field_desc',     $_POST['field_desc']     ?? '');
-        
+        $field->setVar('field_required', Request::getInt('field_required',    0,      'POST'));
+        $field->setVar('field_order',    Request::getInt('field_order',       0,      'POST'));
+        $field->setVar('field_status',   Request::getInt('field_status',      1,      'POST'));
+        $field->setVar('field_desc',     Request::getString('field_desc',     '',     'POST'));
+
         if ($field->getVar('field_type') !== 'file') {
-            $field->setVar('field_default',  $_POST['field_default']  ?? '');
+            $field->setVar('field_default',  Request::getString('field_default', '', 'POST'));
         } elseif ($oldType !== 'file' && empty($_FILES['field_file']['name'])) {
             $field->setVar('field_default', '');
         }
-        
-        $field->setVar('show_in_tpl',    (int)($_POST['show_in_tpl']    ?? 1));
+
+        $field->setVar('show_in_tpl',    Request::getInt('show_in_tpl', 1, 'POST'));
 
         if ($field->getVar('field_type') === 'file' && isset($_FILES['field_file']) && $_FILES['field_file']['error'] === UPLOAD_ERR_OK) {
             $uploadDir = XOOPS_UPLOAD_PATH . '/xpages/';

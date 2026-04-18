@@ -5,6 +5,8 @@
  * @author   Eren Yumak — Aymak (aymak.net)
  */
 
+use Xmf\Request;
+
 require_once '../../mainfile.php';
 
 $xoopsOption['template_main'] = 'xpages_index.tpl';
@@ -38,7 +40,7 @@ $itemsPerPage = isset($xoopsModuleConfig["items_per_page"]) ? (int)$xoopsModuleC
 $totalCount   = $pageHandler->getCount($criteria);
 
 // Sayfalama
-$start = isset($_GET['start']) ? max(0, (int)$_GET['start']) : 0;
+$start = max(0, Request::getInt('start', 0, 'GET'));
 $criteria->setStart($start);
 $criteria->setLimit($itemsPerPage);
 

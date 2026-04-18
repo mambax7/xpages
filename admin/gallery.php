@@ -5,6 +5,8 @@
  * @author   Eren Yumak — Aymak (aymak.net)
  */
 
+use Xmf\Request;
+
 include_once '../../../include/cp_header.php';
 require_once XOOPS_ROOT_PATH . '/modules/xpages/include/functions.php';
 xpages_admin_boot();
@@ -24,9 +26,9 @@ if (!$galleryHandler || !$pageHandler) {
     exit;
 }
 
-$pageId = isset($_GET['page_id']) ? (int)$_GET['page_id'] : (isset($_POST['page_id']) ? (int)$_POST['page_id'] : 0);
-$op     = $_GET['op'] ?? $_POST['op'] ?? 'list';
-$galleryId = isset($_GET['gallery_id']) ? (int)$_GET['gallery_id'] : (isset($_POST['gallery_id']) ? (int)$_POST['gallery_id'] : 0);
+$pageId    = Request::getInt('page_id',    0,      'REQUEST');
+$op        = Request::getCmd('op',         'list', 'REQUEST');
+$galleryId = Request::getInt('gallery_id', 0,      'REQUEST');
 
 $pageObj   = $pageId ? $pageHandler->get($pageId) : null;
 $pageTitle = $pageObj ? htmlspecialchars((string)$pageObj->getVar('title'), ENT_QUOTES) : _AM_XPAGES_GALLERY_ALL_PAGES;
@@ -42,7 +44,7 @@ if ($pageId && $pageObj) {
 
 // ── Sil ───────────────────────────────────────────────────────────────────────
 if ($op === 'delete' && $galleryId) {
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['confirm'])) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || 1 !== Request::getInt('confirm', 0, 'POST')) {
         $gobj = $galleryHandler->get($galleryId);
         if ($gobj) {
             echo '<div style="background:#fff3cd;border:1px solid #ffc107;padding:18px;margin-bottom:16px;border-radius:8px">';
@@ -94,14 +96,14 @@ if ($op === 'save') {
     $gallery = $galleryId ? $galleryHandler->get($galleryId) : $galleryHandler->create();
 
     $gallery->setVar('page_id',       $pageId);
-    $gallery->setVar('title',         $_POST['title'] ?? '');
-    $gallery->setVar('description',   $_POST['description'] ?? '');
-    $gallery->setVar('image_order',   (int)($_POST['image_order'] ?? 0));
-    $gallery->setVar('image_status',  (int)($_POST['image_status'] ?? 1));
+    $gallery->setVar('title',         Request::getString('title',       '', 'POST'));
+    $gallery->setVar('description',   Request::getString('description', '', 'POST'));
+    $gallery->setVar('image_order',   Request::getInt('image_order',    0,  'POST'));
+    $gallery->setVar('image_status',  Request::getInt('image_status',   1,  'POST'));
     $gallery->setVar('uid',           (int)$GLOBALS['xoopsUser']->getVar('uid'));
 
     // Harici URL kontrolü
-    $imageUrl = xpages_normalize_url($_POST['image_url'] ?? '');
+    $imageUrl = xpages_normalize_url(Request::getString('image_url', '', 'POST'));
     if (!empty($imageUrl)) {
         $gallery->setVar('image_url', $imageUrl);
         $gallery->setVar('image_path', '');

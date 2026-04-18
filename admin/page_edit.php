@@ -5,6 +5,8 @@
  * @author   Eren Yumak — Aymak (aymak.net)
  */
 
+use Xmf\Request;
+
 include_once '../../../include/cp_header.php';
 require_once XOOPS_ROOT_PATH . '/modules/xpages/include/functions.php';
 xpages_admin_boot();
@@ -25,9 +27,8 @@ if (!$pageHandler || !$fieldHandler || !$valueHandler) {
     exit;
 }
 
-$pageId = isset($_GET['page_id'])  ? (int)$_GET['page_id']  :
-        (isset($_POST['page_id']) ? (int)$_POST['page_id'] : 0);
-$op     = $_POST['op'] ?? 'edit';
+$pageId = Request::getInt('page_id', 0,      'REQUEST');
+$op     = Request::getCmd('op',      'edit', 'POST');
 // "Advanced code" = raw HTML/JS injected into <head> / before </body>.
 // Gate on module-admin rights rather than hard-coded group id 1: a site
 // may rebind "webmaster" to a different group id, and `getGroups()`
@@ -58,30 +59,35 @@ if ($op === 'save') {
         exit;
     }
 
-    $parentId = (int)($_POST['parent_id'] ?? 0);
+    $parentId = Request::getInt('parent_id', 0, 'POST');
     if ($pageId && $parentId > 0 && ($parentId === $pageId || in_array($parentId, $descendantIds, true))) {
         redirect_header('page_edit.php?page_id=' . $pageId, 3, _AM_XPAGES_PARENT_INVALID);
         exit;
     }
 
-    $page->setVar('title',        $_POST['title']        ?? '');
-    $page->setVar('body',         $_POST['body']         ?? '');
-    $page->setVar('short_desc',   $_POST['short_desc']   ?? '');
-    $page->setVar('page_status',  (int)($_POST['page_status']  ?? 1));
-    $page->setVar('menu_order',   (int)($_POST['menu_order']   ?? 0));
-    $page->setVar('show_in_menu', (int)($_POST['show_in_menu'] ?? 0));
-    $page->setVar('show_in_nav',  (int)($_POST['show_in_nav']  ?? 0));
-    $page->setVar('parent_id',    $parentId);
-    $page->setVar('meta_title',    $_POST['meta_title']    ?? '');
-    $page->setVar('meta_keywords', $_POST['meta_keywords'] ?? '');
-    $page->setVar('meta_desc',     $_POST['meta_desc']     ?? '');
-    $page->setVar('noindex',      isset($_POST['noindex'])  ? 1 : 0);
-    $page->setVar('nofollow',     isset($_POST['nofollow']) ? 1 : 0);
-    $page->setVar('redirect_url', xpages_normalize_url($_POST['redirect_url'] ?? ''));
+    // Note: title/body/*_desc/header/footer_code are authored HTML from a
+    // WYSIWYG editor and must preserve tags — use getText() which keeps
+    // the raw string (Request::getString() runs through FilterInput which
+    // can collapse whitespace in HTML-heavy bodies).
+    $page->setVar('title',         Request::getText('title',        '',    'POST'));
+    $page->setVar('body',          Request::getText('body',         '',    'POST'));
+    $page->setVar('short_desc',    Request::getText('short_desc',   '',    'POST'));
+    $page->setVar('page_status',   Request::getInt('page_status',   1,     'POST'));
+    $page->setVar('menu_order',    Request::getInt('menu_order',    0,     'POST'));
+    $page->setVar('show_in_menu',  Request::getInt('show_in_menu',  0,     'POST'));
+    $page->setVar('show_in_nav',   Request::getInt('show_in_nav',   0,     'POST'));
+    $page->setVar('parent_id',     $parentId);
+    $page->setVar('meta_title',    Request::getString('meta_title',    '', 'POST'));
+    $page->setVar('meta_keywords', Request::getText('meta_keywords',   '', 'POST'));
+    $page->setVar('meta_desc',     Request::getText('meta_desc',       '', 'POST'));
+    $page->setVar('noindex',       Request::hasVar('noindex',  'POST') ? 1 : 0);
+    $page->setVar('nofollow',      Request::hasVar('nofollow', 'POST') ? 1 : 0);
+    $page->setVar('redirect_url',  xpages_normalize_url(Request::getString('redirect_url', '', 'POST')));
 
     if ($canUseAdvancedCode) {
-        $newHeader = (string)($_POST['header_code'] ?? '');
-        $newFooter = (string)($_POST['footer_code'] ?? '');
+        // Header/footer code is raw HTML/JS — preserve byte-for-byte.
+        $newHeader = Request::getText('header_code', '', 'POST');
+        $newFooter = Request::getText('footer_code', '', 'POST');
         $oldHeader = (string)$page->getVar('header_code', 'n');
         $oldFooter = (string)$page->getVar('footer_code', 'n');
 
@@ -117,8 +123,8 @@ if ($op === 'save') {
     }
     $page->setVar('uid',          (int)($GLOBALS['xoopsUser']->getVar('uid') ?? 0));
 
-    $rawAlias = trim($_POST['alias'] ?? '');
-    if (empty($rawAlias)) {
+    $rawAlias = trim(Request::getString('alias', '', 'POST'));
+    if ('' === $rawAlias) {
         $rawAlias = (string)$page->getVar('title', 'n');
     }
     $page->setVar('alias', $pageHandler->generateAlias($rawAlias, $pageId));
@@ -133,16 +139,11 @@ if ($op === 'save') {
     } else {
         $savedId = (int)$page->getVar('page_id');
 
-        $values = array();
+        $values = [];
 
-        if (!empty($_POST['extra_fields']) && is_array($_POST['extra_fields'])) {
-            foreach ($_POST['extra_fields'] as $fid => $val) {
-                if (is_array($val)) {
-                    $values[(int)$fid] = implode('|', $val);
-                } else {
-                    $values[(int)$fid] = (string)$val;
-                }
-            }
+        $extraFieldsInput = Request::getArray('extra_fields', [], 'POST');
+        foreach ($extraFieldsInput as $fid => $val) {
+            $values[(int)$fid] = is_array($val) ? implode('|', $val) : (string)$val;
         }
 
         $uploadDir = XOOPS_UPLOAD_PATH . '/xpages/';

@@ -5,6 +5,8 @@
  * @author   Eren Yumak — Aymak (aymak.net)
  */
 
+use Xmf\Request;
+
 include_once '../../../include/cp_header.php';
 require_once XOOPS_ROOT_PATH . '/modules/xpages/include/functions.php';
 xpages_admin_boot();
@@ -24,10 +26,10 @@ if (!$pageHandler) {
 }
 
 // ── Silme işlemi ──────────────────────────────────────────────────────────────
-if (!empty($_GET['op']) && $_GET['op'] === 'delete' && !empty($_GET['page_id'])) {
-    $pageId = (int)$_GET['page_id'];
+if (Request::getCmd('op', '', 'GET') === 'delete' && Request::getInt('page_id', 0, 'GET') > 0) {
+    $pageId = Request::getInt('page_id', 0, 'GET');
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_POST['confirm'])) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST' || 1 !== Request::getInt('confirm', 0, 'POST')) {
         $pageObj = $pageHandler->get($pageId);
         if ($pageObj) {
             echo '<div style="background:#fff3cd;border:1px solid #ffc107;padding:20px;margin:16px 0;border-radius:8px">';
@@ -62,13 +64,13 @@ if (!empty($_GET['op']) && $_GET['op'] === 'delete' && !empty($_GET['page_id']))
 }
 
 // ── Durum değiştir ────────────────────────────────────────────────────────────
-if (!empty($_POST['op']) && $_POST['op'] === 'toggle' && !empty($_POST['page_id'])) {
+if (Request::getCmd('op', '', 'POST') === 'toggle' && Request::getInt('page_id', 0, 'POST') > 0) {
     if (!$GLOBALS['xoopsSecurity']->check()) {
         redirect_header('pages.php', 3, implode('<br>', $GLOBALS['xoopsSecurity']->getErrors()));
         exit;
     }
 
-    $pageObj = $pageHandler->get((int)$_POST['page_id']);
+    $pageObj = $pageHandler->get(Request::getInt('page_id', 0, 'POST'));
     if ($pageObj) {
         $pageObj->setVar('page_status', (int)!$pageObj->getVar('page_status'));
         $pageHandler->insert($pageObj);
