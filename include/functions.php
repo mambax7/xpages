@@ -13,31 +13,17 @@ if (!defined('XOOPS_ROOT_PATH')) {
 }
 
 /**
- * Handler yükleme fonksiyonu
+ * Handler yükleme fonksiyonu.
+ *
+ * Thin wrapper around \XoopsModules\Xpages\Helper::getHandler(). The
+ * parent Xmf\Module\Helper implementation loads class/{name}.php and
+ * instantiates Xpages{Name}Handler for us, so this function just
+ * normalises the "not found" case (false → null) for legacy callers.
  */
-function xpages_get_handler($name) {
-    static $handlers = array();
-    
-    if (!isset($handlers[$name])) {
-        $handlerClass = 'Xpages' . ucfirst($name) . 'Handler';
-        $handlerFile = XOOPS_ROOT_PATH . '/modules/xpages/class/' . strtolower($name) . '.php';
-        
-        if (file_exists($handlerFile)) {
-            require_once $handlerFile;
-            
-            if (class_exists($handlerClass)) {
-                $handlers[$name] = new $handlerClass($GLOBALS['xoopsDB']);
-            } else {
-                trigger_error("xPages: Handler class {$handlerClass} not found in {$handlerFile}", E_USER_WARNING);
-                return null;
-            }
-        } else {
-            trigger_error("xPages: Handler file not found: {$handlerFile}", E_USER_WARNING);
-            return null;
-        }
-    }
-    
-    return $handlers[$name];
+function xpages_get_handler(string $name)
+{
+    $handler = \XoopsModules\Xpages\Helper::getInstance()->getHandler($name);
+    return $handler !== false ? $handler : null;
 }
 
 /**
@@ -153,21 +139,14 @@ function xpages_require_module_admin(): void {
 }
 
 /**
- * Dil dosyası yükleme
+ * Dil dosyası yükleme.
+ *
+ * Delegates to the module Helper, which uses Xmf\Language::load() and
+ * handles the english-fallback lookup + log integration for free.
  */
-function xpages_load_language($type = 'main') {
-    global $xoopsConfig;
-    
-    $lang = $xoopsConfig['language'];
-    $file = XOOPS_ROOT_PATH . '/modules/xpages/language/' . $lang . '/' . $type . '.php';
-    
-    if (!file_exists($file)) {
-        $file = XOOPS_ROOT_PATH . '/modules/xpages/language/english/' . $type . '.php';
-    }
-    
-    if (file_exists($file)) {
-        include_once $file;
-    }
+function xpages_load_language(string $type = 'main'): void
+{
+    \XoopsModules\Xpages\Helper::getInstance()->loadLanguage($type);
 }
 
 /**

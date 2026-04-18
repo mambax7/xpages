@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 defined('XOOPS_ROOT_PATH') || die('XOOPS root path not defined');
 
+require_once __DIR__ . '/preloads/autoloader.php';
+
 $modversion = [];
 
 $modversion['name']            = _MI_XPAGES_NAME;
