@@ -38,15 +38,21 @@ class XpagesPage extends XoopsObject
     }
     
     /**
-     * Sayfa URL'ini döndür
+     * Sayfa URL'ini döndür.
+     *
+     * Routes through the module Helper so the dirname isn't hardcoded —
+     * a site admin who renames the module directory gets correct URLs
+     * without any source changes.
      */
     public function getPageUrl(): string
     {
-        $alias = (string)$this->getVar('alias');
+        $helper = \XoopsModules\Xpages\Helper::getInstance();
+        $alias  = (string)$this->getVar('alias');
+
         if ($alias !== '') {
-            return XOOPS_URL . '/modules/xpages/page.php?alias=' . urlencode($alias);
+            return $helper->url('page.php?alias=' . urlencode($alias));
         }
-        return XOOPS_URL . '/modules/xpages/page.php?page_id=' . (int)$this->getVar('page_id');
+        return $helper->url('page.php?page_id=' . (int)$this->getVar('page_id'));
     }
     
     /**
@@ -147,7 +153,20 @@ class XpagesPageHandler extends XoopsPersistableObjectHandler
     }
 
     /**
-     * Hit sayısını artır
+     * Hit sayısını artır.
+     *
+     * Deliberately bypasses the XoopsObject layer and issues a bare
+     * `UPDATE hits = hits + 1` so concurrent hits are atomic at the
+     * InnoDB row level — no read-modify-write race that could lose a
+     * hit on a high-traffic page.
+     *
+     * Side-effect to be aware of: the in-memory XpagesPage object the
+     * caller may be holding is NOT refreshed. `$page->getVar('hits')`
+     * immediately after this call still reflects the pre-increment
+     * value. Re-`get()` the page if the fresh count matters.
+     *
+     * Also skips the `update_date` timestamp so counting hits doesn't
+     * muddle last-edited dates on the page list.
      */
     public function incrementHits(int $pageId): bool
     {

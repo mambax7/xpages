@@ -92,17 +92,13 @@ $pagesObjects = $pageHandler->getObjects($criteria) ?: [];
 // template itself only iterates and echoes.
 $rows = [];
 foreach ($pagesObjects as $p) {
-    $pid   = (int)$p->getVar('page_id');
-    $alias = (string)$p->getVar('alias', 'n');
     $rows[] = [
-        'id'         => $pid,
+        'id'         => (int)$p->getVar('page_id'),
         'title'      => (string)$p->getVar('title'),
-        'alias'      => $alias,
+        'alias'      => (string)$p->getVar('alias', 'n'),
         'status'     => (int)$p->getVar('page_status'),
         'menu_order' => (int)$p->getVar('menu_order'),
-        'page_url'   => $alias !== ''
-            ? XOOPS_URL . '/modules/xpages/page.php?alias=' . urlencode($alias)
-            : XOOPS_URL . '/modules/xpages/page.php?page_id=' . $pid,
+        'page_url'   => $p->getPageUrl(),
     ];
 }
 

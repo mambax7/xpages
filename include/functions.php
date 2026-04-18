@@ -174,9 +174,16 @@ function xpages_normalize_url($url, $allowRelative = true) {
     $hasScheme     = $colonPos !== false && ($delimiterPos === strlen($url) || $colonPos < $delimiterPos);
 
     if ($hasScheme) {
-        $scheme = strtolower(substr($url, 0, $colonPos));
+        $scheme         = strtolower(substr($url, 0, $colonPos));
         $allowedSchemes = ['http', 'https', 'ftp', 'mailto'];
         if (!in_array($scheme, $allowedSchemes, true)) {
+            return '';
+        }
+        // filter_var is a useful final structural check for http/https/ftp
+        // (catches things like unclosed IPv6 brackets). Skip it for mailto
+        // because FILTER_VALIDATE_URL rejects mailto: across PHP versions,
+        // and skip for relative URLs (they fail the same check by design).
+        if ($scheme !== 'mailto' && filter_var($url, FILTER_VALIDATE_URL) === false) {
             return '';
         }
     } elseif (!$allowRelative) {
