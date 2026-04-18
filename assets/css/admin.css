@@ -659,6 +659,11 @@
     flex-wrap: wrap;
 }
 
+.xpages-quick-actions a {
+  color: aliceblue;
+  text-decoration: none;
+}
+
 /* Vertical stacked quick actions (index.php right column) */
 .xpages-quick-column {
     display: flex;
