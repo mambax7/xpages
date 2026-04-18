@@ -30,6 +30,7 @@ if (!$pageHandler || !$fieldHandler || !$valueHandler) {
 
 $pageId = Request::getInt('page_id', 0,      'REQUEST');
 $op     = Request::getCmd('op',      'edit', 'POST');
+
 // "Advanced code" = raw HTML/JS injected into <head> / before </body>.
 // Gate on module-admin rights rather than hard-coded group id 1: a site
 // may rebind "webmaster" to a different group id, and `getGroups()`
@@ -37,6 +38,7 @@ $op     = Request::getCmd('op',      'edit', 'POST');
 $canUseAdvancedCode = is_object($xoopsUser)
     && is_object($xoopsModule)
     && $xoopsUser->isAdmin($xoopsModule->getVar('mid'));
+
 $descendantIds = [];
 if ($pageId) {
     xpages_collect_descendant_ids($pageHandler, $pageId, $descendantIds);
@@ -66,10 +68,6 @@ if ($op === 'save') {
         exit;
     }
 
-    // Note: title/body/*_desc/header/footer_code are authored HTML from a
-    // WYSIWYG editor and must preserve tags — use getText() which keeps
-    // the raw string (Request::getString() runs through FilterInput which
-    // can collapse whitespace in HTML-heavy bodies).
     $page->setVar('title',         Request::getText('title',        '',    'POST'));
     $page->setVar('body',          Request::getText('body',         '',    'POST'));
     $page->setVar('short_desc',    Request::getText('short_desc',   '',    'POST'));
@@ -86,16 +84,11 @@ if ($op === 'save') {
     $page->setVar('redirect_url',  xpages_normalize_url(Request::getString('redirect_url', '', 'POST')));
 
     if ($canUseAdvancedCode) {
-        // Header/footer code is raw HTML/JS — preserve byte-for-byte.
         $newHeader = Request::getText('header_code', '', 'POST');
         $newFooter = Request::getText('footer_code', '', 'POST');
         $oldHeader = (string)$page->getVar('header_code', 'n');
         $oldFooter = (string)$page->getVar('footer_code', 'n');
 
-        // Audit trail — these fields render via {nofilter} on the public
-        // page, so every modification is security-relevant even when the
-        // actor is a legitimate webmaster. Logged via XoopsLogger so the
-        // entry appears in XOOPS's extra-info log for post-incident review.
         if (($newHeader !== $oldHeader || $newFooter !== $oldFooter)
             && is_object($GLOBALS['xoopsLogger'])
         ) {
@@ -141,7 +134,6 @@ if ($op === 'save') {
         $savedId = (int)$page->getVar('page_id');
 
         $values = [];
-
         $extraFieldsInput = Request::getArray('extra_fields', [], 'POST');
         foreach ($extraFieldsInput as $fid => $val) {
             $values[(int)$fid] = is_array($val) ? implode('|', $val) : (string)$val;
@@ -179,192 +171,116 @@ if ($op === 'save') {
     }
 }
 
-// ── Form ──────────────────────────────────────────────────────────────────────
+// ── Form (render path) ────────────────────────────────────────────────────────
 $page = $pageId ? $pageHandler->get($pageId) : $pageHandler->create();
 if (!$page) {
     redirect_header('pages.php', 3, _AM_XPAGES_PAGE_NOT_FOUND);
     exit;
 }
 
-$existingValues = $pageId ? $valueHandler->getValuesForPage($pageId) : array();
+$existingValues = $pageId ? $valueHandler->getValuesForPage($pageId) : [];
 $extraFields    = $pageId ? $fieldHandler->getFieldsForPage($pageId, false) : $fieldHandler->getGlobalFields(false);
 
-$allPages = $pageHandler->getObjects() ?: array();
+// Parent-page options, pre-filtered so the template just iterates.
+$allPages         = $pageHandler->getObjects() ?: [];
 $blockedParentIds = array_flip($descendantIds);
-?>
-
-<h3><?= $pageId ? _AM_XPAGES_EDIT_PAGE : _AM_XPAGES_ADD_PAGE ?></h3>
-
-<?php // (inline <style> block extracted to assets/css/admin.css) ?>
-
-<form method="post" action="page_edit.php" enctype="multipart/form-data" id="xpages-edit-form">
-    <input type="hidden" name="op" value="save">
-    <input type="hidden" name="page_id" value="<?= $pageId ?>">
-    <?= $GLOBALS['xoopsSecurity']->getTokenHTML() ?>
-
-    <ul class="xp-tabs" id="xpTabList">
-        <li class="active"><a href="#tab-main" onclick="xpShowTab(this,'tab-main');return false"><?= _AM_XPAGES_TAB_MAIN ?></a></li>
-        <li><a href="#tab-seo"  onclick="xpShowTab(this,'tab-seo');return false"><?= _AM_XPAGES_TAB_SEO ?></a></li>
-        <li><a href="#tab-adv"  onclick="xpShowTab(this,'tab-adv');return false"><?= _AM_XPAGES_TAB_ADVANCED ?></a></li>
-        <?php if (!empty($extraFields)): ?>
-            <li><a href="#tab-extra" onclick="xpShowTab(this,'tab-extra');return false"><?= _AM_XPAGES_TAB_EXTRA ?></a></li>
-        <?php endif; ?>
-    </ul>
-
-    <!-- TAB: Genel Bilgiler -->
-    <div id="tab-main" class="xp-tab-pane active">
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_PAGE_TITLE ?> <span class="req">*</span></label>
-            <input type="text" name="title" value="<?= htmlspecialchars((string)$page->getVar('title', 'n'), ENT_QUOTES) ?>" required>
-        </div>
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_PAGE_ALIAS ?></label>
-            <input type="text" name="alias" value="<?= htmlspecialchars((string)$page->getVar('alias', 'n'), ENT_QUOTES) ?>" placeholder="<?= _AM_XPAGES_ALIAS_PLACEHOLDER ?>">
-            <small class="xpf-desc"><?= _AM_XPAGES_ALIAS_HELP ?></small>
-        </div>
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_SHORT_DESC ?></label>
-            <textarea name="short_desc" rows="3"><?= htmlspecialchars((string)$page->getVar('short_desc', 'n'), ENT_QUOTES) ?></textarea>
-        </div>
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_BODY ?></label>
-            <textarea name="body" rows="16"><?= htmlspecialchars((string)$page->getVar('body', 'n'), ENT_QUOTES) ?></textarea>
-        </div>
-        <div class="xp-row">
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_STATUS ?></label>
-                <select name="page_status">
-                    <option value="1" <?= $page->getVar('page_status') == 1 ? 'selected' : '' ?>><?= _AM_XPAGES_ACTIVE ?></option>
-                    <option value="0" <?= $page->getVar('page_status') == 0 ? 'selected' : '' ?>><?= _AM_XPAGES_INACTIVE ?></option>
-                </select>
-            </div>
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_PAGE_ORDER ?></label>
-                <input type="number" name="menu_order" value="<?= (int)$page->getVar('menu_order') ?>" min="0">
-            </div>
-        </div>
-        <div class="xp-row">
-            <div class="xpages-field">
-                <label><input type="checkbox" name="show_in_menu" value="1" <?= $page->getVar('show_in_menu') ? 'checked' : '' ?>> <?= _AM_XPAGES_SHOW_IN_MENU ?></label>
-            </div>
-            <div class="xpages-field">
-                <label><input type="checkbox" name="show_in_nav" value="1" <?= $page->getVar('show_in_nav') ? 'checked' : '' ?>> <?= _AM_XPAGES_SHOW_IN_NAV ?></label>
-            </div>
-        </div>
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_PARENT_PAGE ?></label>
-            <select name="parent_id">
-                <option value="0"><?= _AM_XPAGES_NO_PARENT ?></option>
-                <?php foreach ($allPages as $ap):
-                    $apId = (int)$ap->getVar('page_id');
-                    if ($apId === $pageId || isset($blockedParentIds[$apId])) continue; ?>
-                    <option value="<?= $ap->getVar('page_id') ?>" <?= (int)$page->getVar('parent_id') === (int)$ap->getVar('page_id') ? 'selected' : '' ?>>
-                        <?= htmlspecialchars((string)$ap->getVar('title'), ENT_QUOTES) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-    </div>
-
-    <!-- TAB: SEO -->
-    <div id="tab-seo" class="xp-tab-pane">
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_META_TITLE ?></label>
-            <input type="text" name="meta_title" value="<?= htmlspecialchars((string)$page->getVar('meta_title', 'n'), ENT_QUOTES) ?>" maxlength="255">
-            <small class="xpf-desc"><?= _AM_XPAGES_META_TITLE_HELP ?></small>
-        </div>
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_META_KEYWORDS ?></label>
-            <textarea name="meta_keywords" rows="2"><?= htmlspecialchars((string)$page->getVar('meta_keywords', 'n'), ENT_QUOTES) ?></textarea>
-        </div>
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_META_DESC ?></label>
-            <textarea name="meta_desc" rows="3"><?= htmlspecialchars((string)$page->getVar('meta_desc', 'n'), ENT_QUOTES) ?></textarea>
-            <small class="xpf-desc"><?= _AM_XPAGES_META_DESC_HELP ?></small>
-        </div>
-        <div class="xp-row">
-            <div class="xpages-field">
-                <label><input type="checkbox" name="noindex" value="1" <?= $page->getVar('noindex') ? 'checked' : '' ?>> <?= _AM_XPAGES_NOINDEX ?></label>
-            </div>
-            <div class="xpages-field">
-                <label><input type="checkbox" name="nofollow" value="1" <?= $page->getVar('nofollow') ? 'checked' : '' ?>> <?= _AM_XPAGES_NOFOLLOW ?></label>
-            </div>
-        </div>
-        <div class="xpages-field">
-            <label><?= _AM_XPAGES_REDIRECT_URL ?></label>
-            <input type="url" name="redirect_url" value="<?= htmlspecialchars((string)$page->getVar('redirect_url', 'n'), ENT_QUOTES) ?>" placeholder="https://">
-            <small class="xpf-desc"><?= _AM_XPAGES_REDIRECT_HELP ?></small>
-        </div>
-    </div>
-
-    <!-- TAB: Gelişmiş -->
-    <div id="tab-adv" class="xp-tab-pane">
-        <?php if ($canUseAdvancedCode): ?>
-            <div role="alert" class="xp-adv-warning">
-                <strong>⚠ </strong><?= _AM_XPAGES_ADVANCED_CODE_WARNING ?>
-            </div>
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_HEADER_CODE ?></label>
-                <textarea name="header_code" rows="5" class="xp-code-textarea"><?= htmlspecialchars((string)$page->getVar('header_code', 'n'), ENT_QUOTES) ?></textarea>
-                <small class="xpf-desc"><?= _AM_XPAGES_HEADER_CODE_HELP ?></small>
-            </div>
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_FOOTER_CODE ?></label>
-                <textarea name="footer_code" rows="5" class="xp-code-textarea"><?= htmlspecialchars((string)$page->getVar('footer_code', 'n'), ENT_QUOTES) ?></textarea>
-                <small class="xpf-desc"><?= _AM_XPAGES_FOOTER_CODE_HELP ?></small>
-            </div>
-        <?php else: ?>
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_HEADER_CODE ?></label>
-                <div class="xp-alert xp-alert--muted">
-                    <?= _AM_XPAGES_ADVANCED_CODE_RESTRICTED ?>
-                </div>
-            </div>
-        <?php endif; ?>
-        <?php if ($pageId): ?>
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_MANAGE_FIELDS_FOR_PAGE ?></label>
-                <a href="fields.php?page_id=<?= $pageId ?>" class="xp-btn xp-btn--primary"><?= _AM_XPAGES_MENU_FIELDS ?></a>
-            </div>
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_GALLERY_TITLE ?></label>
-                <a href="gallery.php?page_id=<?= $pageId ?>" class="xp-btn xp-btn--warning"><?= _AM_XPAGES_GALLERY_MANAGE ?></a>
-                <small class="xpf-desc"><?= _AM_XPAGES_GALLERY_MANAGE_HELP ?></small>
-            </div>
-        <?php else: ?>
-            <div class="xpages-field">
-                <label><?= _AM_XPAGES_GALLERY_TITLE ?></label>
-                <button type="button" class="xp-btn" disabled><?= _AM_XPAGES_GALLERY_SAVE_FIRST ?></button>
-                <small class="xpf-desc"><?= _AM_XPAGES_GALLERY_SAVE_FIRST_HELP ?></small>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- TAB: İlave Alanlar -->
-    <?php if (!empty($extraFields)): ?>
-        <div id="tab-extra" class="xp-tab-pane">
-            <?php foreach ($extraFields as $field):
-                $fid = (int)$field->getVar('field_id');
-                $val = $existingValues[$fid] ?? (string)$field->getVar('field_default', 'n');
-                echo xpages_render_field_input($field, $val);
-            endforeach; ?>
-        </div>
-    <?php endif; ?>
-
-    <br>
-    <input type="submit" value="<?= _AM_XPAGES_SAVE ?>" class="formButton">
-    <a href="pages.php" class="xp-cancel-link"><?= _AM_XPAGES_CANCEL ?></a>
-</form>
-
-<script>
-    function xpShowTab(el, id) {
-        document.querySelectorAll('.xp-tab-pane').forEach(function(p){ p.classList.remove('active'); });
-        document.querySelectorAll('#xpTabList li').forEach(function(l){ l.classList.remove('active'); });
-        document.getElementById(id).classList.add('active');
-        el.parentElement.classList.add('active');
+$parentOptions    = [];
+foreach ($allPages as $ap) {
+    $apId = (int)$ap->getVar('page_id');
+    if ($apId === $pageId || isset($blockedParentIds[$apId])) {
+        continue;
     }
-</script>
+    $parentOptions[] = [
+        'id'       => $apId,
+        'title'    => (string)$ap->getVar('title'),
+        'selected' => ((int)$page->getVar('parent_id') === $apId),
+    ];
+}
 
-<?php
+// Build a flat descriptor for each extra field. The page_edit template
+// loops over these and includes xpages_field_input.tpl for each one —
+// no more nofilter slot, no more pre-assembled HTML string.
+$extraFieldRows = [];
+foreach ($extraFields as $field) {
+    $fid = (int)$field->getVar('field_id');
+    $val = $existingValues[$fid] ?? (string)$field->getVar('field_default', 'n');
+    $descriptor = xpages_build_field_descriptor($field, $val);
+    if ($descriptor !== null) {
+        $extraFieldRows[] = $descriptor;
+    }
+}
+
+xpages_admin_render('xpages_admin_page_edit.tpl', [
+    'form_title'                   => $pageId ? _AM_XPAGES_EDIT_PAGE : _AM_XPAGES_ADD_PAGE,
+    'page_id'                      => $pageId,
+    'page'                         => [
+        'title'         => (string)$page->getVar('title',         'n'),
+        'alias'         => (string)$page->getVar('alias',         'n'),
+        'short_desc'    => (string)$page->getVar('short_desc',    'n'),
+        'body'          => (string)$page->getVar('body',          'n'),
+        'status'        => (int)   $page->getVar('page_status'),
+        'menu_order'    => (int)   $page->getVar('menu_order'),
+        'show_in_menu'  => (bool)  $page->getVar('show_in_menu'),
+        'show_in_nav'   => (bool)  $page->getVar('show_in_nav'),
+        'parent_id'     => (int)   $page->getVar('parent_id'),
+        'meta_title'    => (string)$page->getVar('meta_title',    'n'),
+        'meta_keywords' => (string)$page->getVar('meta_keywords', 'n'),
+        'meta_desc'     => (string)$page->getVar('meta_desc',     'n'),
+        'noindex'       => (bool)  $page->getVar('noindex'),
+        'nofollow'      => (bool)  $page->getVar('nofollow'),
+        'redirect_url'  => (string)$page->getVar('redirect_url',  'n'),
+        'header_code'   => (string)$page->getVar('header_code',   'n'),
+        'footer_code'   => (string)$page->getVar('footer_code',   'n'),
+    ],
+    'parent_options'               => $parentOptions,
+    'can_use_advanced_code'        => $canUseAdvancedCode,
+    'has_extra_fields'             => (count($extraFieldRows) > 0),
+    'extra_fields'                 => $extraFieldRows,
+
+    // Labels (controller-assigned so the template doesn't depend on the
+    // _AM_* constants being in scope at render time).
+    'label_tab_main'               => _AM_XPAGES_TAB_MAIN,
+    'label_tab_seo'                => _AM_XPAGES_TAB_SEO,
+    'label_tab_advanced'           => _AM_XPAGES_TAB_ADVANCED,
+    'label_tab_extra'              => _AM_XPAGES_TAB_EXTRA,
+    'label_page_title'             => _AM_XPAGES_PAGE_TITLE,
+    'label_page_alias'             => _AM_XPAGES_PAGE_ALIAS,
+    'alias_placeholder'            => _AM_XPAGES_ALIAS_PLACEHOLDER,
+    'alias_help'                   => _AM_XPAGES_ALIAS_HELP,
+    'label_short_desc'             => _AM_XPAGES_SHORT_DESC,
+    'label_body'                   => _AM_XPAGES_BODY,
+    'label_status'                 => _AM_XPAGES_STATUS,
+    'label_active'                 => _AM_XPAGES_ACTIVE,
+    'label_inactive'               => _AM_XPAGES_INACTIVE,
+    'label_page_order'             => _AM_XPAGES_PAGE_ORDER,
+    'label_show_in_menu'           => _AM_XPAGES_SHOW_IN_MENU,
+    'label_show_in_nav'            => _AM_XPAGES_SHOW_IN_NAV,
+    'label_parent_page'            => _AM_XPAGES_PARENT_PAGE,
+    'label_no_parent'              => _AM_XPAGES_NO_PARENT,
+    'label_meta_title'             => _AM_XPAGES_META_TITLE,
+    'meta_title_help'              => _AM_XPAGES_META_TITLE_HELP,
+    'label_meta_keywords'          => _AM_XPAGES_META_KEYWORDS,
+    'label_meta_desc'              => _AM_XPAGES_META_DESC,
+    'meta_desc_help'               => _AM_XPAGES_META_DESC_HELP,
+    'label_noindex'                => _AM_XPAGES_NOINDEX,
+    'label_nofollow'               => _AM_XPAGES_NOFOLLOW,
+    'label_redirect_url'           => _AM_XPAGES_REDIRECT_URL,
+    'redirect_help'                => _AM_XPAGES_REDIRECT_HELP,
+    'label_advanced_code_warning'  => _AM_XPAGES_ADVANCED_CODE_WARNING,
+    'label_advanced_code_restricted' => _AM_XPAGES_ADVANCED_CODE_RESTRICTED,
+    'label_header_code'            => _AM_XPAGES_HEADER_CODE,
+    'header_code_help'             => _AM_XPAGES_HEADER_CODE_HELP,
+    'label_footer_code'            => _AM_XPAGES_FOOTER_CODE,
+    'footer_code_help'             => _AM_XPAGES_FOOTER_CODE_HELP,
+    'label_manage_fields'          => _AM_XPAGES_MANAGE_FIELDS_FOR_PAGE,
+    'label_menu_fields'            => _AM_XPAGES_MENU_FIELDS,
+    'label_gallery'                => _AM_XPAGES_GALLERY_TITLE,
+    'label_gallery_manage'         => _AM_XPAGES_GALLERY_MANAGE,
+    'gallery_manage_help'          => _AM_XPAGES_GALLERY_MANAGE_HELP,
+    'label_gallery_save_first'     => _AM_XPAGES_GALLERY_SAVE_FIRST,
+    'gallery_save_first_help'      => _AM_XPAGES_GALLERY_SAVE_FIRST_HELP,
+    'label_save'                   => _AM_XPAGES_SAVE,
+    'label_cancel'                 => _AM_XPAGES_CANCEL,
+]);
+
 xoops_cp_footer();
-?>

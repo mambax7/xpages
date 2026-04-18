@@ -31,34 +31,32 @@ $pageId    = Request::getInt('page_id',    0,      'REQUEST');
 $op        = Request::getCmd('op',         'list', 'REQUEST');
 $galleryId = Request::getInt('gallery_id', 0,      'REQUEST');
 
-$pageObj   = $pageId ? $pageHandler->get($pageId) : null;
-$pageTitle = $pageObj ? htmlspecialchars((string)$pageObj->getVar('title'), ENT_QUOTES) : _AM_XPAGES_GALLERY_ALL_PAGES;
+$pageObj          = $pageId ? $pageHandler->get($pageId) : null;
+$pageTitleDisplay = $pageObj ? (string)$pageObj->getVar('title') : _AM_XPAGES_GALLERY_ALL_PAGES;
 
-echo '<div class="xp-toolbar xp-toolbar--inline">';
-echo '<h2>' . _AM_XPAGES_GALLERY_TITLE . '</h2>';
-echo '<span class="xp-text-muted">— ' . $pageTitle . '</span>';
-echo '</div>';
-
-if ($pageId && $pageObj) {
-    echo '<p><a href="page_edit.php?page_id=' . $pageId . '" class="xp-action--edit">◀ ' . _AM_XPAGES_BACK_TO_PAGE . '</a></p>';
-}
+// Header (toolbar + back link) — always shown above the op branches.
+xpages_admin_render('xpages_admin_gallery_header.tpl', [
+    'gallery_title'       => _AM_XPAGES_GALLERY_TITLE,
+    'page_title_display'  => $pageTitleDisplay,
+    'page_id'             => ($pageObj ? $pageId : 0),
+    'label_back_to_page'  => _AM_XPAGES_BACK_TO_PAGE,
+]);
 
 // ── Sil ───────────────────────────────────────────────────────────────────────
 if ($op === 'delete' && $galleryId) {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST' || 1 !== Request::getInt('confirm', 0, 'POST')) {
         $gobj = $galleryHandler->get($galleryId);
         if ($gobj) {
-            echo '<div class="xp-alert xp-alert--warning">';
-            echo '<p>⚠️ ' . sprintf(_AM_XPAGES_GALLERY_DELETE_CONFIRM, htmlspecialchars((string)$gobj->getVar('title'), ENT_QUOTES)) . '</p>';
-            echo '<form method="post" action="gallery.php?op=delete&gallery_id=' . $galleryId . '&page_id=' . $pageId . '" class="xp-confirm-actions">';
-            echo '<input type="hidden" name="op" value="delete">';
-            echo '<input type="hidden" name="gallery_id" value="' . $galleryId . '">';
-            echo '<input type="hidden" name="page_id" value="' . $pageId . '">';
-            echo '<input type="hidden" name="confirm" value="1">';
-            echo $GLOBALS['xoopsSecurity']->getTokenHTML();
-            echo '<button type="submit" class="xp-btn xp-btn--danger">' . _AM_XPAGES_YES . '</button>';
-            echo '<a href="gallery.php?page_id=' . $pageId . '" class="xp-btn xp-btn--cancel">' . _AM_XPAGES_NO . '</a>';
-            echo '</form></div>';
+            xpages_admin_render('xpages_admin_gallery_delete_confirm.tpl', [
+                'confirm_message' => sprintf(
+                    _AM_XPAGES_GALLERY_DELETE_CONFIRM,
+                    htmlspecialchars((string)$gobj->getVar('title'), ENT_QUOTES)
+                ),
+                'gallery_id' => $galleryId,
+                'page_id'    => $pageId,
+                'label_yes'  => _AM_XPAGES_YES,
+                'label_no'   => _AM_XPAGES_NO,
+            ]);
         }
         xoops_cp_footer();
         exit;
@@ -149,110 +147,73 @@ if ($op === 'save') {
 // ── Ekle / Düzenle Formu ──────────────────────────────────────────────────────
 if (in_array($op, ['add', 'edit'], true)) {
     $gallery = ($op === 'edit' && $galleryId) ? $galleryHandler->get($galleryId) : $galleryHandler->create();
-    ?>
-<?php // (inline <style> block extracted to assets/css/admin.css) ?>
 
-<div class="xp-form-card">
-<h3><?= $op === 'edit' ? _AM_XPAGES_GALLERY_EDIT : _AM_XPAGES_GALLERY_NEW ?></h3>
-<form method="post" action="gallery.php" enctype="multipart/form-data">
-<input type="hidden" name="op" value="save">
-<input type="hidden" name="page_id" value="<?= $pageId ?>">
-<input type="hidden" name="gallery_id" value="<?= $galleryId ?>">
-<?= $GLOBALS['xoopsSecurity']->getTokenHTML() ?>
+    // Pre-compute "current image" preview URL so the template stays flat.
+    $currentImage = null;
+    if ($op === 'edit' && !empty($gallery->getVar('image_path'))) {
+        $safeGalleryFile = xpages_safe_filename($gallery->getVar('image_path', 'n'));
+        if ($safeGalleryFile !== '') {
+            $currentImage = [
+                'url' => XOOPS_UPLOAD_URL . '/xpages/gallery/' . rawurlencode($safeGalleryFile),
+            ];
+        }
+    }
 
-<table class="xpf-form-table">
-    <tr>
-        <td><label><?= _AM_XPAGES_GALLERY_IMG_TITLE ?> *</label></td>
-        <td><input type="text" name="title" value="<?= htmlspecialchars((string)$gallery->getVar('title', 'n'), ENT_QUOTES) ?>" required></td>
-    </tr>
-    <tr>
-        <td><label><?= _AM_XPAGES_GALLERY_IMG_DESC ?></label></td>
-        <td><textarea name="description" rows="3"><?= htmlspecialchars((string)$gallery->getVar('description', 'n'), ENT_QUOTES) ?></textarea></td>
-    </tr>
-    <tr>
-        <td><label><?= _AM_XPAGES_GALLERY_IMG_FILE ?></label></td>
-        <td>
-            <input type="file" name="image_file" accept="image/*">
-            <small class="xpf-desc"><?= _AM_XPAGES_GALLERY_IMG_FILE_HELP ?></small>
-            <?php if ($op === 'edit' && !empty($gallery->getVar('image_path'))): ?>
-                <?php $safeGalleryFile = xpages_safe_filename($gallery->getVar('image_path', 'n')); ?>
-                <?php if ($safeGalleryFile !== ''): ?>
-                    <br><img src="<?= XOOPS_UPLOAD_URL . '/xpages/gallery/' . rawurlencode($safeGalleryFile) ?>" class="image-preview">
-                    <br><small><?= _AM_XPAGES_GALLERY_CURRENT_IMG ?></small>
-                <?php endif; ?>
-            <?php endif; ?>
-        </td>
-    </tr>
-    <tr>
-        <td><label><?= _AM_XPAGES_GALLERY_IMG_URL ?></label></td>
-        <td>
-            <input type="url" name="image_url" value="<?= htmlspecialchars((string)$gallery->getVar('image_url', 'n'), ENT_QUOTES) ?>" placeholder="https://...">
-            <small class="xpf-desc"><?= _AM_XPAGES_GALLERY_IMG_URL_HELP ?></small>
-        </td>
-    </tr>
-    <tr>
-        <td><label><?= _AM_XPAGES_GALLERY_IMG_ORDER ?></label></td>
-        <td><input type="number" name="image_order" value="<?= (int)$gallery->getVar('image_order') ?>" min="0" class="xp-input-small"></td>
-    </tr>
-    <tr>
-        <td><label><?= _AM_XPAGES_GALLERY_IMG_STATUS ?></label></td>
-        <td>
-            <select name="image_status">
-                <option value="1" <?= $gallery->getVar('image_status') ? 'selected' : '' ?>><?= _AM_XPAGES_ACTIVE ?></option>
-                <option value="0" <?= !$gallery->getVar('image_status') ? 'selected' : '' ?>><?= _AM_XPAGES_INACTIVE ?></option>
-            </select>
-        </td>
-    </tr>
-</table>
-<br>
-<button type="submit" class="xp-btn xp-btn--add"><?= _AM_XPAGES_SAVE ?></button>
-<a href="gallery.php?page_id=<?= $pageId ?>" class="xp-cancel-link"><?= _AM_XPAGES_CANCEL ?></a>
-</form>
-</div>
-    <?php
+    xpages_admin_render('xpages_admin_gallery_form.tpl', [
+        'form_title'       => $op === 'edit' ? _AM_XPAGES_GALLERY_EDIT : _AM_XPAGES_GALLERY_NEW,
+        'page_id'          => $pageId,
+        'gallery_id'       => $galleryId,
+        'gallery'          => [
+            'title'        => (string)$gallery->getVar('title',        'n'),
+            'description'  => (string)$gallery->getVar('description',  'n'),
+            'image_url'    => (string)$gallery->getVar('image_url',    'n'),
+            'image_order'  => (int)   $gallery->getVar('image_order'),
+            'image_status' => (bool)  $gallery->getVar('image_status'),
+        ],
+        'current_image'    => $currentImage,
+        'label_title'      => _AM_XPAGES_GALLERY_IMG_TITLE,
+        'label_desc'       => _AM_XPAGES_GALLERY_IMG_DESC,
+        'label_file'       => _AM_XPAGES_GALLERY_IMG_FILE,
+        'help_file'        => _AM_XPAGES_GALLERY_IMG_FILE_HELP,
+        'label_current_img'=> _AM_XPAGES_GALLERY_CURRENT_IMG,
+        'label_url'        => _AM_XPAGES_GALLERY_IMG_URL,
+        'help_url'         => _AM_XPAGES_GALLERY_IMG_URL_HELP,
+        'label_order'      => _AM_XPAGES_GALLERY_IMG_ORDER,
+        'label_status'     => _AM_XPAGES_GALLERY_IMG_STATUS,
+        'label_active'     => _AM_XPAGES_ACTIVE,
+        'label_inactive'   => _AM_XPAGES_INACTIVE,
+        'label_save'       => _AM_XPAGES_SAVE,
+        'label_cancel'     => _AM_XPAGES_CANCEL,
+    ]);
+
     xoops_cp_footer();
     exit;
 }
 
 // ── Galeri Listesi ────────────────────────────────────────────────────────────
-$gallery = $galleryHandler->getGalleryForPage($pageId, false);
+$galleryItems = $galleryHandler->getGalleryForPage($pageId, false);
 
-echo '<p><a href="gallery.php?op=add&page_id=' . $pageId . '" class="xp-btn xp-btn--add">' . _AM_XPAGES_GALLERY_ADD . '</a></p>';
-
-if (empty($gallery)) {
-    echo '<div class="xp-empty">';
-    echo '<div class="xp-empty-icon">🖼️</div>';
-    echo '<div class="xp-empty-text">' . _AM_XPAGES_GALLERY_EMPTY . '</div>';
-    echo '<a href="gallery.php?op=add&page_id=' . $pageId . '" class="xp-empty-cta xp-empty-cta--blue">' . _AM_XPAGES_GALLERY_ADD_FIRST . '</a>';
-    echo '</div>';
-    xoops_cp_footer();
-    exit;
+// Flatten XoopsObject list → template-ready card descriptors.
+$rows = [];
+foreach ($galleryItems ?: [] as $item) {
+    $rows[] = [
+        'id'           => (int)$item->getVar('gallery_id'),
+        'title'        => (string)$item->getVar('title'),
+        'description'  => (string)$item->getVar('description'),
+        'image_url'    => (string)$item->getImageUrl(),
+        'status_label' => sprintf(
+            _AM_XPAGES_GALLERY_ORDER_STATUS,
+            (int)$item->getVar('image_order')
+        ) . ($item->getVar('image_status') ? _AM_XPAGES_STATUS_ACTIVE : _AM_XPAGES_STATUS_INACTIVE),
+    ];
 }
 
-echo '<div class="xpages-gallery-grid">';
-
-foreach ($gallery as $item) {
-    $imageUrl = $item->getImageUrl();
-    echo '<div class="xpages-gallery-card">';
-    echo '<div class="xpages-gallery-card-img">';
-    if ($imageUrl) {
-        echo '<img src="' . htmlspecialchars($imageUrl, ENT_QUOTES) . '" alt="">';
-    } else {
-        echo '<div class="xpages-gallery-card-img-placeholder">🖼️</div>';
-    }
-    echo '</div>';
-    echo '<div class="xpages-gallery-card-body">';
-    echo '<h4>' . htmlspecialchars((string)$item->getVar('title'), ENT_QUOTES) . '</h4>';
-    echo '<p class="xpages-gallery-card-desc">' . htmlspecialchars((string)$item->getVar('description'), ENT_QUOTES) . '</p>';
-    echo '<div class="xpages-gallery-card-footer">';
-    echo '<small>' . sprintf(_AM_XPAGES_GALLERY_ORDER_STATUS, (int)$item->getVar('image_order')) . ($item->getVar('image_status') ? _AM_XPAGES_STATUS_ACTIVE : _AM_XPAGES_STATUS_INACTIVE) . '</small>';
-    echo '<div class="xp-actions">';
-    echo '<a href="gallery.php?op=edit&gallery_id=' . $item->getVar('gallery_id') . '&page_id=' . $pageId . '" class="xp-action--edit">✏️</a>';
-    echo '<a href="gallery.php?op=delete&gallery_id=' . $item->getVar('gallery_id') . '&page_id=' . $pageId . '" class="xp-action--delete">🗑️</a>';
-    echo '</div></div></div></div>';
-}
-
-echo '</div>';
+xpages_admin_render('xpages_admin_gallery_list.tpl', [
+    'page_id'          => $pageId,
+    'items'            => $rows,
+    'label_add'        => _AM_XPAGES_GALLERY_ADD,
+    'label_empty_text' => _AM_XPAGES_GALLERY_EMPTY,
+    'label_add_first'  => _AM_XPAGES_GALLERY_ADD_FIRST,
+]);
 
 xoops_cp_footer();
-?>

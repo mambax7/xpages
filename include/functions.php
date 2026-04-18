@@ -67,6 +67,51 @@ function xpages_admin_register_css(): void {
 }
 
 /**
+ * Render an admin template file with a set of assignments.
+ *
+ * Encapsulates the $xoopsTpl->assign()/fetch() dance every admin
+ * controller performs when it needs to emit a block of HTML. Templates
+ * live in modules/xpages/templates/admin/ and are looked up by filename
+ * relative to that directory (no leading slash).
+ *
+ * The helper also auto-injects two convenience values that every admin
+ * template is likely to want:
+ *   - xoops_token_html — the CSRF token HTML block, ready to drop inside
+ *     a <form>. Saves every template from wiring up
+ *     $GLOBALS['xoopsSecurity']->getTokenHTML() manually.
+ *   - xpages_upload_url — the module's public upload URL (used by any
+ *     template that renders previews of user-uploaded files).
+ *
+ * @param string              $template Filename under templates/admin/ (e.g. 'xpages_admin_pages.tpl')
+ * @param array<string,mixed> $vars     Smarty variable assignments
+ */
+function xpages_admin_render(string $template, array $vars = []): void {
+    global $xoopsTpl;
+    if (!isset($xoopsTpl) || !($xoopsTpl instanceof \XoopsTpl)) {
+        require_once $GLOBALS['xoops']->path('class/template.php');
+        $xoopsTpl = new \XoopsTpl();
+    }
+
+    // Allow <{include file="xpages_*.tpl"}> inside admin templates to
+    // resolve from templates/admin/ without a full path prefix.
+    $adminTplDir = XOOPS_ROOT_PATH . '/modules/xpages/templates/admin/';
+    if (method_exists($xoopsTpl, 'addTemplateDir')) {
+        $xoopsTpl->addTemplateDir($adminTplDir);
+    }
+
+    if (isset($GLOBALS['xoopsSecurity']) && is_object($GLOBALS['xoopsSecurity'])) {
+        $xoopsTpl->assign('xoops_token_html', $GLOBALS['xoopsSecurity']->getTokenHTML());
+    }
+    $xoopsTpl->assign('xpages_upload_url', XOOPS_UPLOAD_URL . '/xpages/');
+
+    foreach ($vars as $key => $value) {
+        $xoopsTpl->assign($key, $value);
+    }
+
+    echo $xoopsTpl->fetch($adminTplDir . $template);
+}
+
+/**
  * Register the module's public-facing stylesheet.
  *
  * Must be called AFTER XOOPS_ROOT_PATH/header.php has been included (the
@@ -272,123 +317,122 @@ function xpages_collect_descendant_ids($pageHandler, $pageId, array &$descendant
 }
 
 /**
- * İlave alan input render fonksiyonu (RADIO/SELECT DÜZELTİLDİ)
+ * Build a template-ready descriptor for a single extra-field input.
+ *
+ * The returned array is consumed by templates/admin/xpages_field_input.tpl.
+ * Options for select/radio are pre-split and per-option flags computed in
+ * PHP so the template can stay a simple if-chain with no filtering logic.
+ *
+ * @param mixed        $field  XoopsObject field definition (or null)
+ * @param string|int   $value  current stored value
+ * @return array|null          descriptor array, or null when $field is invalid
  */
-function xpages_render_field_input($field, $value = '') {
-    if (!$field) return '';
-    
-    $fid = (int)$field->getVar('field_id');
+function xpages_build_field_descriptor($field, $value = '')
+{
+    if (!$field) {
+        return null;
+    }
+
+    $fid  = (int)   $field->getVar('field_id');
+    $type = (string)$field->getVar('field_type');
     $name = 'extra_fields[' . $fid . ']';
-    $label = htmlspecialchars((string)$field->getVar('field_label'), ENT_QUOTES);
-    $type = $field->getVar('field_type');
-    $required = (int)$field->getVar('field_required') ? ' required' : '';
-    $desc = htmlspecialchars((string)$field->getVar('field_desc'), ENT_QUOTES);
-    $options = $field->getVar('field_options');
-    
-    // RADIO ve SELECT için options değerini temizle (HTML etiketlerini newline'e çevir)
-    if ($type === 'radio' || $type === 'select') {
-        $options = html_entity_decode($options, ENT_QUOTES, 'UTF-8');
-        $options = preg_replace('/<br\s*\/?>/i', "\n", $options);
-        $options = str_replace("\r\n", "\n", $options);
-        $options = str_replace("\r", "\n", $options);
+
+    $descriptor = [
+        'id'       => $fid,
+        'type'     => $type,
+        'name'     => $name,
+        'input_id' => 'extra_field_' . $fid,
+        'label'    => (string)$field->getVar('field_label'),
+        'desc'     => (string)$field->getVar('field_desc'),
+        'required' => (bool)  $field->getVar('field_required'),
+        'value'    => (string)$value,
+    ];
+
+    if ($type === 'checkbox') {
+        $descriptor['checked'] = ((int)$value === 1);
+        return $descriptor;
     }
-    
-    $html = '<div class="xpages-field" id="field-' . $fid . '">';
-    $html .= '<label for="extra_field_' . $fid . '">' . $label . ($required ? ' <span class="req">*</span>' : '') . '</label>';
-    
-    switch ($type) {
-        case 'text':
-        case 'email':
-        case 'url':
-        case 'tel':
-            $html .= '<input type="' . $type . '" name="' . $name . '" id="extra_field_' . $fid . '" value="' . htmlspecialchars((string)$value, ENT_QUOTES) . '"' . $required . '>';
-            break;
-            
-        case 'textarea':
-            $html .= '<textarea name="' . $name . '" id="extra_field_' . $fid . '" rows="5"' . $required . '>' . htmlspecialchars((string)$value, ENT_QUOTES) . '</textarea>';
-            break;
-            
-        case 'number':
-            $html .= '<input type="number" name="' . $name . '" id="extra_field_' . $fid . '" value="' . htmlspecialchars((string)$value, ENT_QUOTES) . '"' . $required . '>';
-            break;
-            
-        case 'checkbox':
-            $html .= '<input type="hidden" name="' . $name . '" value="0">';
-            $html .= '<input type="checkbox" name="' . $name . '" id="extra_field_' . $fid . '" value="1"' . ((int)$value === 1 ? ' checked' : '') . $required . '>';
-            break;
-            
-        case 'select':
-            $html .= '<select name="' . $name . '" id="extra_field_' . $fid . '"' . $required . '>';
-            $html .= '<option value="">' . _AM_XPAGES_SELECT_PLACEHOLDER . '</option>';
-            if (!empty($options)) {
-                $optLines = explode("\n", trim($options));
-                foreach ($optLines as $opt) {
-                    $opt = trim($opt);
-                    if ($opt === '') continue;
-                    $selected = ($opt == $value) ? ' selected' : '';
-                    $html .= '<option value="' . htmlspecialchars($opt, ENT_QUOTES) . '"' . $selected . '>' . htmlspecialchars($opt, ENT_QUOTES) . '</option>';
-                }
+
+    if ($type === 'select' || $type === 'radio') {
+        $raw = (string)$field->getVar('field_options');
+        $raw = html_entity_decode($raw, ENT_QUOTES, 'UTF-8');
+        $raw = preg_replace('/<br\s*\/?>/i', "\n", $raw);
+        $raw = str_replace(["\r\n", "\r"], "\n", $raw);
+
+        $options = [];
+        $i = 0;
+        foreach (explode("\n", trim($raw)) as $opt) {
+            $opt = trim($opt);
+            if ($opt === '') {
+                continue;
             }
-            $html .= '</select>';
-            break;
-            
-        case 'radio':
-            $html .= '<div class="xpages-radio-group">';
-            if (!empty($options)) {
-                $optLines = explode("\n", trim($options));
-                $i = 0;
-                foreach ($optLines as $opt) {
-                    $opt = trim($opt);
-                    if ($opt === '') continue;
-                    $checked = ($opt == $value) ? ' checked' : '';
-                    $radioId = 'extra_field_' . $fid . '_' . $i;
-                    // .xpages-radio-group label (from admin.css) supplies the
-                    // inline-block / margin / normal-weight declarations.
-                    $html .= '<label for="' . $radioId . '">';
-                    $html .= '<input type="radio" name="' . $name . '" id="' . $radioId . '" value="' . htmlspecialchars($opt, ENT_QUOTES) . '"' . $checked . $required . '> ' . htmlspecialchars($opt, ENT_QUOTES);
-                    $html .= '</label>';
-                    $i++;
-                }
-            }
-            $html .= '</div>';
-            break;
-            
-        case 'file':
-            $html .= '<div class="xpages-file-field">';
-            $html .= '<input type="file" name="extra_files[' . $fid . ']" id="extra_file_' . $fid . '" accept="image/*,application/pdf,.doc,.docx,.zip">';
-            
-            if (!empty($value)) {
-                $uploadUrl = XOOPS_UPLOAD_URL . '/xpages/';
-                $safeValue = xpages_safe_filename((string)$value);
-                $fileUrl = $safeValue !== '' ? $uploadUrl . rawurlencode($safeValue) : '';
+            $options[] = [
+                'value'    => $opt,
+                'label'    => $opt,
+                'selected' => ($opt == $value),
+                'radio_id' => 'extra_field_' . $fid . '_' . $i,
+            ];
+            $i++;
+        }
+        $descriptor['options'] = $options;
+        if ($type === 'select') {
+            $descriptor['placeholder'] = _AM_XPAGES_SELECT_PLACEHOLDER;
+        }
+        return $descriptor;
+    }
+
+    if ($type === 'file') {
+        $descriptor['file_input_name'] = 'extra_files[' . $fid . ']';
+        $descriptor['file_input_id']   = 'extra_file_'  . $fid;
+        $descriptor['labels'] = [
+            'current_file' => _AM_XPAGES_FILE_CURRENT_LABEL,
+            'replace_note' => _AM_XPAGES_FILE_REPLACE_NOTE,
+            'file_none'    => _AM_XPAGES_FILE_NONE,
+        ];
+        $descriptor['has_current_file'] = false;
+
+        if (!empty($value)) {
+            $safeValue = xpages_safe_filename((string)$value);
+            if ($safeValue !== '') {
                 $ext = strtolower(pathinfo($safeValue, PATHINFO_EXTENSION));
-                $html .= '<div class="xpages-current-file xp-margin-top-8">';
-                $html .= '<small><strong>' . _AM_XPAGES_FILE_CURRENT_LABEL . '</strong><br>';
-                if ($fileUrl && in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
-                    $html .= '<img src="' . $fileUrl . '" class="xpf-preview--md" alt="">';
-                } elseif ($fileUrl) {
-                    $html .= '<a href="' . $fileUrl . '" target="_blank" rel="noopener">📎 ' . htmlspecialchars($value) . '</a>';
-                }
-                $html .= '<br><span class="xp-text-muted xp-text-small">' . _AM_XPAGES_FILE_REPLACE_NOTE . '</span>';
-                $html .= '</small></div>';
-                $html .= '<input type="hidden" name="' . $name . '" value="' . htmlspecialchars($safeValue, ENT_QUOTES) . '">';
-            } else {
-                $html .= '<small class="xpf-desc xpf-block-note">' . _AM_XPAGES_FILE_NONE . '</small>';
+                $descriptor['has_current_file']  = true;
+                $descriptor['current_file_url']  = XOOPS_UPLOAD_URL . '/xpages/' . rawurlencode($safeValue);
+                $descriptor['current_file_raw']  = (string)$value;
+                $descriptor['current_file_safe'] = $safeValue;
+                $descriptor['is_image']          = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true);
             }
-            $html .= '</div>';
-            break;
-            
-        default:
-            $html .= '<input type="text" name="' . $name . '" id="extra_field_' . $fid . '" value="' . htmlspecialchars((string)$value, ENT_QUOTES) . '"' . $required . '>';
+        }
     }
-    
-    if ($desc) {
-        $html .= '<small class="xpf-desc">' . $desc . '</small>';
+
+    return $descriptor;
+}
+
+/**
+ * İlave alan input render fonksiyonu.
+ *
+ * Builds a descriptor via xpages_build_field_descriptor() and renders it
+ * through the xpages_field_input.tpl partial. Returns the rendered HTML
+ * so existing callers (admin/page_edit.php) continue to work.
+ */
+function xpages_render_field_input($field, $value = '')
+{
+    $descriptor = xpages_build_field_descriptor($field, $value);
+    if ($descriptor === null) {
+        return '';
     }
-    
-    $html .= '</div>';
-    
-    return $html;
+
+    global $xoopsTpl;
+    if (!isset($xoopsTpl) || !($xoopsTpl instanceof \XoopsTpl)) {
+        require_once $GLOBALS['xoops']->path('class/template.php');
+        $xoopsTpl = new \XoopsTpl();
+    }
+
+    $partial = XOOPS_ROOT_PATH . '/modules/xpages/templates/admin/xpages_field_input.tpl';
+
+    // Use a local clone so the main-template $field assignment (if any) is preserved.
+    $tpl = clone $xoopsTpl;
+    $tpl->assign('field', $descriptor);
+    return $tpl->fetch($partial);
 }
 
 /**
