@@ -36,10 +36,10 @@ function xpages_prepare_upload_dirs(): bool
  */
 function xpages_table_exists(string $tableName): bool
 {
-    $db = $GLOBALS['xoopsDB'];
+    $db       = \XoopsDatabaseFactory::getDatabaseConnection();
     $sqlTable = $db->prefix($tableName);
-    $pattern = addcslashes($sqlTable, '\\_%');
-    $result = $db->query("SHOW TABLES LIKE '" . $pattern . "'");
+    $pattern  = addcslashes($sqlTable, '\\_%');
+    $result   = $db->query("SHOW TABLES LIKE '" . $pattern . "'");
 
     return $result !== false && $db->fetchRow($result) !== false;
 }
@@ -72,7 +72,7 @@ CREATE TABLE `xpages_gallery` (
 SQL;
 
     // XOOPS 2.7: exec() for mutating statements (queryF is deprecated).
-    return (bool)$GLOBALS['xoopsDB']->exec($sql);
+    return (bool)\XoopsDatabaseFactory::getDatabaseConnection()->exec($sql);
 }
 
 /**

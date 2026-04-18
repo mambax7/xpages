@@ -128,14 +128,13 @@ function xpages_register_public_css(): void
  */
 function xpages_require_module_admin(): void
 {
-    global $xoopsUser, $xoopsModule;
-
     // cp_header.php already enforced the system admin-group check; this
     // is defense-in-depth for the per-module admin ACL.
-    if (!is_object($xoopsUser)
-        || !is_object($xoopsModule)
-        || !$xoopsUser->isAdmin($xoopsModule->getVar('mid'))
-    ) {
+    $helper = \XoopsModules\Xpages\Helper::getInstance();
+    $user   = $helper->user();
+    $module = $helper->module();
+
+    if ($user === null || $module === null || !$user->isAdmin($module->getVar('mid'))) {
         redirect_header(
             XOOPS_URL . '/user.php',
             3,
