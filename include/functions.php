@@ -67,6 +67,44 @@ function xpages_admin_register_css(): void {
 }
 
 /**
+ * Render an admin template file with a set of assignments.
+ *
+ * Encapsulates the $xoopsTpl->assign()/fetch() dance every admin
+ * controller performs when it needs to emit a block of HTML. Templates
+ * live in modules/xpages/templates/admin/ and are looked up by filename
+ * relative to that directory (no leading slash).
+ *
+ * The helper also auto-injects two convenience values that every admin
+ * template is likely to want:
+ *   - xoops_token_html — the CSRF token HTML block, ready to drop inside
+ *     a <form>. Saves every template from wiring up
+ *     $GLOBALS['xoopsSecurity']->getTokenHTML() manually.
+ *   - xpages_upload_url — the module's public upload URL (used by any
+ *     template that renders previews of user-uploaded files).
+ *
+ * @param string              $template Filename under templates/admin/ (e.g. 'xpages_admin_pages.tpl')
+ * @param array<string,mixed> $vars     Smarty variable assignments
+ */
+function xpages_admin_render(string $template, array $vars = []): void {
+    global $xoopsTpl;
+    if (!isset($xoopsTpl) || !($xoopsTpl instanceof \XoopsTpl)) {
+        require_once $GLOBALS['xoops']->path('class/template.php');
+        $xoopsTpl = new \XoopsTpl();
+    }
+
+    if (isset($GLOBALS['xoopsSecurity']) && is_object($GLOBALS['xoopsSecurity'])) {
+        $xoopsTpl->assign('xoops_token_html', $GLOBALS['xoopsSecurity']->getTokenHTML());
+    }
+    $xoopsTpl->assign('xpages_upload_url', XOOPS_UPLOAD_URL . '/xpages/');
+
+    foreach ($vars as $key => $value) {
+        $xoopsTpl->assign($key, $value);
+    }
+
+    echo $xoopsTpl->fetch(XOOPS_ROOT_PATH . '/modules/xpages/templates/admin/' . $template);
+}
+
+/**
  * Register the module's public-facing stylesheet.
  *
  * Must be called AFTER XOOPS_ROOT_PATH/header.php has been included (the
